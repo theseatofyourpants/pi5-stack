@@ -70,5 +70,8 @@ docs/                 the pi_design Obsidian vault (architecture reference)
 ```
 
 ## Status
-**Scaffold (step 1).** Structure, conductor, helpers, payload, and docs are in
-place; the `layers/*.sh` are stubs to be implemented incrementally (step 2+).
+**All 9 layers implemented.** `bootstrap.sh` (default + `--all`), `versions.env`
+(real URLs pinned to deployed commits), and the payload/docs are complete. Each
+layer is idempotent and ends in a `verify()`. `90-verify` has been validated green
+against a live full stack. Layers are syntax-checked but only fully exercised on a
+*fresh* Kali box — running them on an already-built Pi would re-clone/reset things.
