@@ -36,7 +36,11 @@ wafw00f, nikto, enum4linux, smbmap, detect_technologies) · [[mcp-wstg-pentest]]
 (log_finding) · Agent (optional [[web-assess]] handoff) · Bash/Read/Write.
 
 ## Method
-1. Liveness + full TCP (65535) + top UDP, `-sV` + `-O`.
+1. Liveness + **top-1000 TCP** (`--top-ports 1000`) + light UDP, `-sV`/`-O` on the
+   open ports. **Proportional & time-bounded**: escalate to a full `-p-` sweep ONLY
+   on a rich, stable surface with time to spare — a low-surface device (a phone with
+   a few `tcpwrapped` ports) gets a quick pass. Target a few minutes; don't grind an
+   absent/flapping host.
 2. Device classification (ports, banners, OS fp, MAC OUI, mDNS/UPnP/NetBIOS).
 3. Per-service non-destructive enum (TLS, SMB null-read, SSH algos, SNMP public…).
 4. Vuln **identification** (nuclei + safe nmap vuln NSE; version→CVE). No exploitation.
