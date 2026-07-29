@@ -129,7 +129,7 @@ a secret, or hardware is unavoidable.
 
 ## Quick start
 ```bash
-git clone git@github.com:theseatofyourpants/pi5-stack.git ~/pi5-stack && cd ~/pi5-stack
+git clone https://github.com/theseatofyourpants/pi5-stack.git ~/pi5-stack && cd ~/pi5-stack
 cp secrets.example.env secrets.env && chmod 600 secrets.env   # fill what you have
 ./bootstrap.sh            # default layers (core → failsafe), ~20 min
 ./bootstrap.sh --all      # everything incl. C2 + sensors, ~1–2 hr
