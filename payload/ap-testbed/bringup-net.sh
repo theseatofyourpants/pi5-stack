@@ -83,6 +83,11 @@ SESSION_AUTH="$HERE/state/session-auth"
 : > "$SESSION_AUTH" 2>/dev/null || true
 chown tsoyp:tsoyp "$SESSION_AUTH" 2>/dev/null || true
 
+# Reconcile orphaned scans: a restart kills any backgrounded scan mid-run, leaving
+# its record stuck at 'running'. Mark those whose process is gone as 'interrupted'.
+reaped="$(python3 "$HERE/lib/store.py" reap-stale 2>/dev/null || echo 0)"
+[ "${reaped:-0}" != "0" ] && log "reaped $reaped orphaned running scan(s)"
+
 # In hybrid egress mode, pre-authorize every allowlisted (persistently trusted)
 # device so it gets internet the moment it joins and stays connected for its scan.
 if [ "$EGRESS" = "1" ]; then

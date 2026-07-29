@@ -235,10 +235,10 @@ def list_consents(limit=300):
 
 
 # ---- scan records ----------------------------------------------------------
-def scan_start(sid, mac, ip, auth, report_md):
+def scan_start(sid, mac, ip, auth, report_md, pid=""):
     rec = {"id": sid, "mac": mac, "ip": ip, "auth": auth,
            "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
-           "status": "running", "report_md": report_md, "finished": None}
+           "status": "running", "report_md": report_md, "pid": str(pid), "finished": None}
     _atomic_write(os.path.join(SCANS, sid + ".json"), json.dumps(rec, indent=2))
 
 def scan_finish(sid, status):
@@ -272,6 +272,30 @@ def scan_log(sid):
     try: return open(os.path.join(SCANS, sid + ".log")).read()
     except Exception: return ""
 
+def _scan_pid_alive(pid):
+    """True only if <pid> is a live trigger-scan process (guards against PID reuse
+    by checking the cmdline). Records with no/stale pid -> not alive."""
+    pid = str(pid or "").strip()
+    if not pid.isdigit():
+        return False
+    try:
+        cl = open("/proc/%s/cmdline" % pid, "rb").read().decode("utf-8", "ignore")
+        return "trigger-scan" in cl
+    except Exception:
+        return False
+
+def reap_stale_scans():
+    """Reconcile orphaned scans: a target/dnsmasq restart kills a backgrounded scan
+    without letting trigger-scan.sh write a final status, so its record stays stuck
+    at 'running'. Mark any 'running' scan whose trigger-scan PID is gone as
+    'interrupted'. Returns the count reaped."""
+    n = 0
+    for rec in list_scans():
+        if rec.get("status") == "running" and not _scan_pid_alive(rec.get("pid", "")):
+            scan_finish(rec.get("id", ""), "interrupted")
+            n += 1
+    return n
+
 
 # ---- CLI (used by trigger-scan.sh / watcher.sh) ----------------------------
 if __name__ == "__main__":
@@ -288,7 +312,8 @@ if __name__ == "__main__":
             print(m)
     elif cmd == "valid-mac":   sys.exit(0 if valid_mac(a[1]) else 1)
     elif cmd == "valid-ip":    sys.exit(0 if valid_ip(a[1]) else 1)
-    elif cmd == "scan-start":  scan_start(a[1], a[2], a[3], a[4], a[5])
+    elif cmd == "scan-start":  scan_start(a[1], a[2], a[3], a[4], a[5], a[6] if len(a) > 6 else "")
     elif cmd == "scan-finish": scan_finish(a[1], a[2])
+    elif cmd == "reap-stale":  print(reap_stale_scans())
     elif cmd == "ssid":        print(load_config().get("ssid", ""))
     else: sys.exit(2)

@@ -48,6 +48,13 @@ wait for an operator, and record ambiguity in the report rather than stopping.
   under aggressive scanning. Prefer `-T3`, modest concurrency.
 - **Authorized.** The device is on an isolated testbed and was authorized (managed
   allowlist or captive consent). Stay within that authorization.
+- **Proportional & time-bounded.** Scale effort to the attack surface. Start with a
+  fast **top-1000 TCP** sweep; only go deeper (full 65535, heavy UDP, exhaustive
+  mDNS) if that surface is genuinely rich AND the host is stable AND time remains —
+  never as the default. A low-surface device (a phone with a few `tcpwrapped` ports)
+  gets a QUICK pass. **Target: finish in a few minutes**, not tens. If the host is
+  flapping / intermittently unreachable, keep it short and say so — do NOT grind
+  through retries on an absent host.
 
 ## Inputs
 The launching prompt gives you the **target IP**, the device **MAC**, the **auth
@@ -55,9 +62,12 @@ mode** (allowlist|consent), and the **report output path**. Use them verbatim.
 
 ## Method
 
-**1 — Liveness + full port map.** Confirm the host is up. Full TCP scan (all 65535)
-plus top UDP. Service + version detection (`-sV`) and OS fingerprint (`-O`) in one
-pass where possible. Prefer `nmap` via kali-server/hexstrike.
+**1 — Liveness + port map.** Confirm the host is up. **Default to a top-1000 TCP
+scan** (`nmap --top-ports 1000`) plus a LIGHT UDP pass (top ~20 only). Add `-sV`
+(version) and `-O` (OS) against the *discovered open ports*, not the whole range.
+Escalate to a full `-p-` sweep ONLY when the top-1000 reveals a rich/unusual surface,
+the host is responsive and stable, and time remains — it is never the default. Prefer
+`nmap` via kali-server/hexstrike. Cap retries; don't chase an unresponsive host.
 
 **2 — Device classification.** From open ports, service banners, OS fingerprint,
 MAC OUI, and any mDNS/UPnP/SSDP/NetBIOS identity, classify the device: phone,
@@ -70,7 +80,7 @@ matching safe checks — examples:
 - **SSH** (22): version, host-key algorithms, auth methods offered (no login attempts).
 - **SNMP** (161/udp): `public`/`private` community *read* only.
 - **Telnet/FTP/RTSP/UPnP/printer (9100)**: banner + capability ID, flag if exposed.
-- **DNS/mDNS**: device/service discovery for identity only.
+- **DNS/mDNS**: a single quick discovery probe for identity only — not exhaustive retries.
 
 **4 — Vulnerability identification.** Run `nuclei` (network + CVE + default-login
 *detection* templates, not exploitation) against the discovered services, and safe

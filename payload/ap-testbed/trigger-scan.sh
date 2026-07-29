@@ -62,7 +62,7 @@ fi
 SID="$(date +%s)-${MAC//:/}"
 OUT="$HOME/engagements/auto-${MAC//:/}-$(date +%Y%m%d-%H%M%S).md"
 SCANLOG="$BASE/state/scans/$SID.log"
-python3 "$STORE" scan-start "$SID" "$MAC" "$IP" "$AUTH" "$OUT"
+python3 "$STORE" scan-start "$SID" "$MAC" "$IP" "$AUTH" "$OUT" "$$"
 note "ARMED scan START id=$SID ip=$IP mac=$MAC auth=$AUTH -> $OUT"
 
 PROMPT="You are running UNATTENDED on an isolated security testbed. Use the Agent tool to \
@@ -111,7 +111,7 @@ fi
 # Stream JSON events through the filter so the admin UI shows live progress.
 # pipefail is on, so guard with set +e to read claude's real exit via PIPESTATUS.
 set +e
-timeout "${SCAN_TIMEOUT:-1200}" "$CLAUDE_BIN" -p --dangerously-skip-permissions \
+timeout "${SCAN_TIMEOUT:-600}" "$CLAUDE_BIN" -p --dangerously-skip-permissions \
   --output-format stream-json --verbose "$PROMPT" \
   2>>"$SCANLOG" | python3 "$BASE/lib/stream-filter.py" >> "$SCANLOG"
 RC=${PIPESTATUS[0]}
