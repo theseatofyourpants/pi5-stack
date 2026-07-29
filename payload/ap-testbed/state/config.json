@@ -1,0 +1,8 @@
+{
+  "ssid": "Open Security Test",
+  "channel": 36,
+  "country": "US",
+  "armed": true,
+  "egress": false,
+  "auto_abort": false
+}

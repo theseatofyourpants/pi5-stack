@@ -1,0 +1,15 @@
+[Unit]
+Description=AP Testbed — interface + walled-garden firewall
+PartOf=ap-testbed.target
+Before=ap-testbed-hostapd.service ap-testbed-dnsmasq.service ap-testbed-portal.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/tsoyp/ap-testbed/bringup-net.sh
+ExecStop=/home/tsoyp/ap-testbed/teardown-net.sh
+# Env overrides (optional): AP_SSID, AP_CHANNEL, AP_SUBNET, AP_COUNTRY
+EnvironmentFile=-/etc/ap-testbed.env
+
+[Install]
+WantedBy=ap-testbed.target

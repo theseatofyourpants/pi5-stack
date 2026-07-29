@@ -1,0 +1,22 @@
+[Unit]
+Description=WiFi Failsafe — captive portal AP when no known network available
+After=NetworkManager.service network-online.target
+Wants=NetworkManager.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/tsoyp/wifi-failsafe/wifi-failsafe.py
+WorkingDirectory=/home/tsoyp/wifi-failsafe
+# Root needed to bind port 80 and run nmcli for hotspot
+User=root
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=wifi-failsafe
+
+# Allow 60s for startup (first nmcli scan can be slow)
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

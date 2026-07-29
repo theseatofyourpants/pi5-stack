@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Settings</h1>
+{% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+
+<h2>Network name (SSID)</h2>
+<div class="card" style="margin-bottom:20px">
+  <form class="row" method="post" action="{{ url_for('settings_ssid') }}">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <input type="text" name="ssid" value="{{ cfg.ssid }}" maxlength="32" size="30" required>
+    <button type="submit">Save SSID</button>
+  </form>
+  <p class="muted" style="margin-bottom:0">1–32 chars: letters, digits, space, <span class="mono">. _ -</span>.
+  {% if st.hostapd %}Applied immediately (hostapd restarts).{% else %}Applies next time the dongle is plugged in.{% endif %}</p>
+</div>
+
+<h2>Arming</h2>
+<div class="card" style="margin-bottom:20px">
+  <div class="row" style="justify-content:space-between">
+    <div>Current: {% if st.armed %}<span class="pill warn">ARMED</span> — authorized devices get real scans{% else %}<span class="pill off">disarmed</span> — bring-up only, scans logged not run{% endif %}</div>
+    <form class="inline" method="post" action="{{ url_for('settings_arm') }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="armed" value="{{ '0' if cfg.armed else '1' }}">
+      <button type="submit" class="{{ 'ghost' if cfg.armed else '' }}">{{ 'Disarm' if cfg.armed else 'Arm' }}</button>
+    </form>
+  </div>
+</div>
+
+<h2>Internet egress (keep devices connected)</h2>
+<div class="card" style="margin-bottom:20px">
+  <div class="row" style="justify-content:space-between">
+    <div>{% if cfg.egress %}<span class="pill warn">ON</span> — real DNS + NAT'd internet (blocked from all private nets); devices stay connected through a scan{% else %}<span class="pill ok">OFF</span> — walled garden, captive DNS, no internet (consent portal pops; devices may auto-leave mid-scan){% endif %}</div>
+    <form class="inline" method="post" action="{{ url_for('settings_egress') }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="egress" value="{{ '0' if cfg.egress else '1' }}">
+      <button type="submit" class="{{ 'ghost' if cfg.egress else '' }}">{{ 'Turn OFF egress' if cfg.egress else 'Turn ON egress' }}</button>
+    </form>
+  </div>
+  <p class="muted" style="margin-bottom:0"><strong>Mode note:</strong> with egress ON the network is no longer “captive”, so the <strong>consent portal won’t auto-pop</strong> — pair it with the <strong>allowlist</strong> (pre-authorized devices auto-scan on join and stay connected). Clients reach the public internet but never your LAN/tailscale/docker.
+  {% if st.hostapd %}Toggling restarts the AP (brief blip).{% else %}Applies next dongle plug.{% endif %}</p>
+</div>
+
+<h2>Auto-abort on disconnect</h2>
+<div class="card" style="margin-bottom:20px">
+  <div class="row" style="justify-content:space-between">
+    <div>{% if cfg.auto_abort %}<span class="pill warn">ON</span> — a running scan is killed if its target leaves the AP{% else %}<span class="pill off">OFF</span> — scans run to completion/timeout even if the device leaves{% endif %}</div>
+    <form class="inline" method="post" action="{{ url_for('settings_auto_abort') }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="auto_abort" value="{{ '0' if cfg.auto_abort else '1' }}">
+      <button type="submit" class="{{ 'ghost' if cfg.auto_abort else '' }}">{{ 'Disable' if cfg.auto_abort else 'Enable' }}</button>
+    </form>
+  </div>
+  <p class="muted" style="margin-bottom:0">Best-effort: detection can lag by a few minutes (hostapd prunes idle stations). Avoids waiting out the 20-min timeout on a departed device.</p>
+</div>
+
+<h2>Kill switch</h2>
+<div class="card">
+  <div class="row" style="justify-content:space-between">
+    <div>{% if st.halt %}<span class="pill bad">HALTED</span> — all scans blocked regardless of arming{% else %}<span class="pill ok">clear</span> — normal operation{% endif %}</div>
+    <form class="inline" method="post" action="{{ url_for('settings_halt') }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="halt" value="{{ '0' if st.halt else '1' }}">
+      <button type="submit" class="{{ '' if st.halt else 'danger' }}">{{ 'Clear HALT' if st.halt else 'HALT now' }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+# hostapd config (rendered by setup-ap.sh) — open AP, low power, isolated.
+interface=__IFACE__
+driver=nl80211
+ssid=__SSID__
+# Band: hw_mode a=5GHz, g=2.4GHz (setup-ap.sh derives this from the channel).
+hw_mode=__HWMODE__
+channel=__CHANNEL__
+country_code=__COUNTRY__
+ieee80211d=1
+# 802.11n (HT) for usable throughput on both bands.
+ieee80211n=1
+ht_capab=[HT20][SHORT-GI-20]
+# 802.11ac (VHT) — 5GHz only; harmless if the client is 2.4GHz-only.
+ieee80211ac=1
+vht_oper_chwidth=0
+# OPEN network on purpose: the consent portal is the gate, not the PSK.
+auth_algs=1
+wmm_enabled=1
+# Client isolation: stations on the AP cannot talk to each other.
+ap_isolate=1
+# Keep the blast radius small — this is a bench rig, not a coverage AP.
+# (tx power is capped separately via `iw` in isolation.sh)
+ignore_broadcast_ssid=0
+max_num_sta=16

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Scans</h1>
+{% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+{% if scans %}
+<table>
+  <tr><th>Started</th><th>Device</th><th>Target</th><th>Auth</th><th>Status</th><th>Finished</th><th>Report</th><th></th></tr>
+  {% for s in scans %}
+  <tr>
+    <td class="mono">{{ s.started }}</td>
+    <td class="mono">{{ s.mac }}</td>
+    <td class="mono">{{ s.ip }}</td>
+    <td><span class="pill off">{{ s.auth }}</span></td>
+    <td>{% if s.status=='running' %}<span class="pill warn">running</span>{% elif s.status=='done' %}<span class="pill ok">done</span>{% else %}<span class="pill bad">{{ s.status }}</span>{% endif %}</td>
+    <td class="mono muted">{{ s.finished or '—' }}</td>
+    <td><a href="{{ url_for('scan_detail', sid=s.id) }}">view</a>{% if s.status=='done' %} · <a href="{{ url_for('report_html', sid=s.id) }}">html</a> · <a href="{{ url_for('report_pdf', sid=s.id) }}">pdf</a>{% endif %}</td>
+    <td>{% if s.status != 'running' %}
+      <form class="inline" method="post" action="{{ url_for('rescan') }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="mac" value="{{ s.mac }}">
+        <button type="submit" title="Clear cooldown and scan this device again (must be connected)">retry</button>
+      </form>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="muted" style="margin-top:12px">“Retry” clears the 30-min cooldown and starts a fresh scan — the device must be connected to the AP for it to run.</p>
+{% else %}<p class="muted">No scans yet. Arm the testbed and let an authorized device join.</p>{% endif %}
+{% endblock %}

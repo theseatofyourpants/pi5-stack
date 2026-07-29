@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Scan {{ s.id }}</h1>
+<div class="row" style="margin-bottom:14px">
+  <span class="muted">Device</span> <span class="mono">{{ s.mac }}</span>
+  <span class="muted">Target</span> <span class="mono">{{ s.ip }}</span>
+  <span class="muted">Auth</span> <span class="pill off">{{ s.auth }}</span>
+  <span class="muted">Status</span>
+  <span id="status">{% if s.status=='running' %}<span class="pill warn">running</span>{% elif s.status=='done' %}<span class="pill ok">done</span>{% else %}<span class="pill bad">{{ s.status }}</span>{% endif %}</span>
+</div>
+<div class="row" style="margin-bottom:16px">
+  <span class="muted">Started</span> <span class="mono">{{ s.started }}</span>
+  {% if s.finished %}<span class="muted">Finished</span> <span class="mono">{{ s.finished }}</span>{% endif %}
+  {% if s.status=='done' %}<a href="{{ url_for('report_html', sid=s.id) }}"><button class="ghost">HTML report</button></a>
+  <a href="{{ url_for('report_pdf', sid=s.id) }}"><button class="ghost">PDF report</button></a>{% endif %}
+</div>
+
+<h2>Live output {% if s.status=='running' %}<span class="muted" style="font-size:13px">(auto-refreshing)</span>{% endif %}</h2>
+<pre class="log" id="log">{{ log or '(waiting for output…)' }}</pre>
+
+{% if s.status=='running' %}
+<script>
+  const sid = {{ s.id|tojson }};
+  async function poll(){
+    try{
+      const r = await fetch("{{ url_for('scan_log_raw', sid=s.id) }}", {cache:"no-store"});
+      const t = await r.text();
+      const nl = t.indexOf("\n");
+      const status = t.slice(1, t.indexOf("]"));
+      document.getElementById("log").textContent = t.slice(nl+1);
+      if(status !== "running"){ location.reload(); return; }
+    }catch(e){}
+    setTimeout(poll, 3000);
+  }
+  setTimeout(poll, 3000);
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,16 @@
+[Unit]
+Description=AP Testbed — dnsmasq (DHCP + captive DNS on the AP subnet)
+PartOf=ap-testbed.target
+Requires=ap-testbed-net.service
+After=ap-testbed-net.service
+BindsTo=ap-testbed-net.service
+
+[Service]
+Type=simple
+# -k keep in foreground so systemd tracks it as the main process.
+ExecStart=/usr/sbin/dnsmasq -k -C /run/ap-testbed/dnsmasq.conf
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=ap-testbed.target

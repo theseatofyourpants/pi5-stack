@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pi Network Setup</title>
+<style>
+  :root {
+    --bg:       #0f1117;
+    --surface:  #1a1d27;
+    --border:   #2a2d3a;
+    --accent:   #6366f1;
+    --accent2:  #818cf8;
+    --green:    #22c55e;
+    --red:      #ef4444;
+    --yellow:   #eab308;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --radius:   12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 24px 16px 48px;
+  }
+  .container { max-width: 480px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 32px; }
+  .logo { font-size: 40px; margin-bottom: 8px; }
+  h1 { font-size: 22px; font-weight: 700; color: var(--text); }
+  .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px;
+  }
+
+  /* AP info */
+  .ap-info { display: flex; flex-direction: column; gap: 8px; }
+  .ap-row { display: flex; justify-content: space-between; align-items: center; }
+  .ap-label { color: var(--muted); font-size: 13px; }
+  .ap-value { font-weight: 600; font-size: 14px; font-family: monospace; }
+
+  /* Scan button */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 12px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.secondary {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  /* Network list */
+  #network-list { display: flex; flex-direction: column; gap: 8px; }
+  .network-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .network-item:hover { border-color: var(--accent); background: #16192a; }
+  .signal-icon { font-size: 18px; flex-shrink: 0; }
+  .network-info { flex: 1; min-width: 0; }
+  .network-ssid { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .network-meta { display: flex; gap: 6px; margin-top: 2px; }
+  .badge {
+    font-size: 10px; font-weight: 600; padding: 1px 6px;
+    border-radius: 4px; text-transform: uppercase;
+  }
+  .badge-secure { background: #1e3a2f; color: var(--green); }
+  .badge-open   { background: #2d1e1e; color: var(--yellow); }
+  .signal-bar   { font-size: 11px; color: var(--muted); }
+
+  /* Spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,.25);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  /* Status banner */
+  .status-banner {
+    display: none; padding: 12px 16px;
+    border-radius: 8px; font-size: 13px; font-weight: 500;
+    margin-bottom: 12px; align-items: center; gap: 10px;
+  }
+  .status-banner.show { display: flex; }
+  .status-success { background: #1a3025; border: 1px solid #2d5a3d; color: var(--green); }
+  .status-error   { background: #2d1a1a; border: 1px solid #5a2d2d; color: var(--red); }
+  .status-info    { background: #1a1e35; border: 1px solid #2d3562; color: var(--accent2); }
+
+  /* Modal */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+    z-index: 100; align-items: flex-end; justify-content: center;
+    padding: 16px;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; width: 100%; max-width: 460px;
+    padding: 24px; animation: slideUp 0.2s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  .input-group { margin-bottom: 16px; }
+  .input-group label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .input-group input {
+    width: 100%; padding: 10px 14px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .input-group input:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+  .modal-actions .btn { flex: 1; }
+
+  .empty-state { text-align: center; padding: 32px 0; color: var(--muted); font-size: 14px; }
+  .empty-icon  { font-size: 32px; margin-bottom: 8px; }
+
+  /* Connecting overlay */
+  .connecting-screen {
+    display: none; position: fixed; inset: 0;
+    background: var(--bg); z-index: 200;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; text-align: center; padding: 32px;
+  }
+  .connecting-screen.show { display: flex; }
+  .big-spinner {
+    width: 56px; height: 56px;
+    border: 4px solid rgba(99,102,241,.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  .connecting-title  { font-size: 20px; font-weight: 700; }
+  .connecting-detail { font-size: 14px; color: var(--muted); max-width: 300px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">📡</div>
+    <h1>Pi Network Setup</h1>
+    <div class="subtitle">Connect this device to a WiFi network</div>
+  </header>
+
+  <!-- This AP's credentials -->
+  <div class="card">
+    <div class="card-title">You're connected to this setup network</div>
+    <div class="ap-info">
+      <div class="ap-row">
+        <span class="ap-label">Network (SSID)</span>
+        <span class="ap-value" id="ap-ssid">{{ ssid }}</span>
+      </div>
+      <div class="ap-row">
+        <span class="ap-label">Password</span>
+        <span class="ap-value" id="ap-password">{{ password }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-banner" id="status-banner"></div>
+
+  <!-- Network scanner -->
+  <div class="card">
+    <div class="card-title">Available Networks</div>
+    <button class="btn" id="scan-btn" onclick="scan()">
+      <span>🔍</span> Scan for Networks
+    </button>
+    <div style="margin-top:16px">
+      <div id="network-list">
+        <div class="empty-state">
+          <div class="empty-icon">📶</div>
+          Press Scan to discover networks
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Connect modal -->
+<div class="overlay" id="connect-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-ssid-title">Connect to network</div>
+    <div class="modal-sub" id="modal-ssid-sub"></div>
+    <div class="input-group" id="password-group">
+      <label>WiFi Password</label>
+      <input type="password" id="modal-password" placeholder="Enter password"
+             onkeydown="if(event.key==='Enter') doConnect()">
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" id="connect-btn" onclick="doConnect()">Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- Connecting fullscreen -->
+<div class="connecting-screen" id="connecting-screen">
+  <div class="big-spinner"></div>
+  <div class="connecting-title">Connecting…</div>
+  <div class="connecting-detail" id="connecting-detail">
+    Attempting to connect. The setup network may go offline briefly.
+    If your device connects to the new network, setup is complete.
+  </div>
+  <button class="btn secondary" style="max-width:200px;margin-top:12px"
+          onclick="cancelConnecting()">
+    Back
+  </button>
+</div>
+
+<script>
+let currentSSID = "";
+let currentSecured = false;
+let pollInterval = null;
+
+function signalEmoji(pct) {
+  if (pct >= 75) return "📶";
+  if (pct >= 50) return "🔵";
+  if (pct >= 25) return "🟡";
+  return "🔴";
+}
+
+async function scan() {
+  const btn = document.getElementById("scan-btn");
+  const list = document.getElementById("network-list");
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Scanning…';
+  list.innerHTML = '<div class="empty-state">Scanning — this takes a few seconds…</div>';
+
+  try {
+    const r = await fetch("/api/scan");
+    const nets = await r.json();
+    if (!nets.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">🚫</div>No networks found</div>';
+    } else {
+      list.innerHTML = nets.map(n => `
+        <div class="network-item" onclick="openModal('${esc(n.ssid)}', ${n.secured})">
+          <span class="signal-icon">${signalEmoji(n.signal)}</span>
+          <div class="network-info">
+            <div class="network-ssid">${esc(n.ssid)}</div>
+            <div class="network-meta">
+              <span class="badge ${n.secured ? 'badge-secure' : 'badge-open'}">${n.secured ? '🔒 Secured' : '🔓 Open'}</span>
+              <span class="signal-bar">${n.signal}%</span>
+            </div>
+          </div>
+        </div>`).join("");
+    }
+  } catch(e) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div>Scan failed — try again</div>';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>🔍</span> Scan Again';
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+function openModal(ssid, secured) {
+  currentSSID = ssid;
+  currentSecured = secured;
+  document.getElementById("modal-ssid-title").textContent = ssid;
+  document.getElementById("modal-ssid-sub").textContent = secured
+    ? "This network requires a password." : "This is an open network.";
+  const pg = document.getElementById("password-group");
+  pg.style.display = secured ? "" : "none";
+  document.getElementById("modal-password").value = "";
+  document.getElementById("connect-modal").classList.add("show");
+  if (secured) setTimeout(() => document.getElementById("modal-password").focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById("connect-modal").classList.remove("show");
+}
+
+async function doConnect() {
+  const pwd = document.getElementById("modal-password").value;
+  if (currentSecured && !pwd) {
+    document.getElementById("modal-password").focus();
+    return;
+  }
+  closeModal();
+  showConnecting(currentSSID);
+
+  await fetch("/api/connect", {
+    method: "POST",
+    body: JSON.stringify({ ssid: currentSSID, password: pwd }),
+    headers: { "Content-Type": "application/json" },
+  });
+
+  // Poll for result
+  pollInterval = setInterval(pollStatus, 3000);
+}
+
+function showConnecting(ssid) {
+  document.getElementById("connecting-detail").textContent =
+    `Connecting to "${ssid}". The setup hotspot may go offline briefly while we test the connection. ` +
+    `If it disappears from your WiFi list, the Pi is now online — this is the expected success state.`;
+  document.getElementById("connecting-screen").classList.add("show");
+}
+
+function cancelConnecting() {
+  clearInterval(pollInterval);
+  document.getElementById("connecting-screen").classList.remove("show");
+}
+
+async function pollStatus() {
+  try {
+    const r = await fetch("/api/status", { signal: AbortSignal.timeout(4000) });
+    const s = await r.json();
+    if (s.connect.state === "success") {
+      clearInterval(pollInterval);
+      document.getElementById("connecting-screen").classList.remove("show");
+      showBanner("success", "✅ " + s.connect.message + " — Pi is now connected to the internet.");
+    } else if (s.connect.state === "error") {
+      clearInterval(pollInterval);
+      document.getElementById("connecting-screen").classList.remove("show");
+      showBanner("error", "❌ " + s.connect.message);
+    }
+    // still "connecting" — keep polling
+  } catch (e) {
+    // Portal unreachable — AP went down — Pi is connecting externally
+    // Could be success or a brief dropout; wait a bit longer
+  }
+}
+
+function showBanner(type, msg) {
+  const el = document.getElementById("status-banner");
+  el.className = `status-banner show status-${type}`;
+  el.innerHTML = msg;
+  el.scrollIntoView({ behavior: "smooth" });
+}
+
+// Initial scan on page load
+window.addEventListener("load", () => {
+  setTimeout(scan, 400);
+});
+</script>
+</body>
+</html>

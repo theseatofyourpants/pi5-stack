@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Consent ledger</h1>
+<p class="muted">Append-only record of devices whose owners tapped “I authorize a scan” on the
+captive portal. This is the audit trail — proof of consent per device.</p>
+{% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+{% if consents %}
+<table>
+  <tr><th>When</th><th>Device (MAC)</th><th>IP</th><th>User-Agent</th><th></th></tr>
+  {% for c in consents %}
+  <tr>
+    <td class="mono">{{ c.ts }}</td>
+    <td class="mono">{{ c.mac }}</td>
+    <td class="mono">{{ c.ip }}</td>
+    <td class="muted" style="font-size:12px">{{ c.user_agent }}</td>
+    <td>
+      <form class="inline" method="post" action="{{ url_for('revoke') }}"
+            onsubmit="return confirm('Revoke & wipe {{ c.mac }}?\n\nThis cuts its internet, clears its consent + session, and DELETES its scan records and reports. Cannot be undone.')">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="mac" value="{{ c.mac }}">
+        <button class="danger" type="submit" title="Cut egress, clear consent/session/cooldown, delete scans + reports">revoke &amp; wipe</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="muted" style="margin-top:12px">“Revoke &amp; wipe” fully purges a device (egress, consent, session, cooldown, scan records, report files). Use it to clean up after a restart or when a guest is done.</p>
+{% else %}<p class="muted">No consents recorded yet.</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,40 @@
+# dnsmasq for the consent-testbed AP (rendered by bringup-net.sh / setup-ap.sh).
+# Hybrid captive design: REAL DNS for everyone (so authorized devices get working
+# internet) + hijack ONLY the OS captive-probe domains to the portal (so the consent
+# UI pops for unauthorized devices; the MAC-aware portal returns "success" to
+# authorized ones). Per-MAC egress is enforced in the firewall, not DNS.
+interface=__IFACE__
+bind-interfaces
+except-interface=lo
+no-hosts
+# Real upstream resolvers (the Pi has internet via its uplink and resolves on
+# behalf of clients; clients still can't EGRESS unless their MAC is authorized).
+no-resolv
+server=1.1.1.1
+server=8.8.8.8
+# Hijack ONLY captive-detection probe hostnames -> the portal.
+address=/captive.apple.com/__SUBNET__.1
+address=/connectivitycheck.gstatic.com/__SUBNET__.1
+address=/connectivitycheck.android.com/__SUBNET__.1
+address=/clients3.google.com/__SUBNET__.1
+address=/clients4.google.com/__SUBNET__.1
+address=/www.msftconnecttest.com/__SUBNET__.1
+address=/www.msftncsi.com/__SUBNET__.1
+address=/dns.msftncsi.com/__SUBNET__.1
+address=/detectportal.firefox.com/__SUBNET__.1
+address=/network-test.debian.org/__SUBNET__.1
+# Friendly local domains -> the portal, so a device can navigate back to its own
+# scan progress/report after dismissing the captive sheet. (.test never resolves
+# publicly, so this can't leak even in egress mode.)
+address=/status.test/__SUBNET__.1
+address=/report.test/__SUBNET__.1
+# DHCP pool on the walled-garden subnet.
+dhcp-range=__SUBNET__.50,__SUBNET__.150,255.255.255.0,1h
+dhcp-option=option:router,__SUBNET__.1
+dhcp-option=option:dns-server,__SUBNET__.1
+dhcp-leasefile=/run/ap-testbed/dnsmasq.leases
+dhcp-script=/home/tsoyp/ap-testbed/watcher.sh
+# Don't drop to 'nobody' — the dhcp-script logs into /home/tsoyp/ap-testbed/logs.
+user=root
+group=root
+log-dhcp

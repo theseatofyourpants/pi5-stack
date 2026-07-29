@@ -1,0 +1,13 @@
+# AP Testbed — the MT7612U dongle is the arming switch.
+#   Plug in  -> start ap-testbed.target (AP + isolation + portal, ARMED)
+#   Unplug   -> stop  ap-testbed.target (full teardown; wlan0/failsafe untouched)
+#
+# Dongle: MediaTek MT7612U = USB 0e8d:7612. If you swap adapters, update the IDs
+# here AND DONGLE_DRIVER in bringup-net.sh.
+#
+# On 'add' the USB device appears before its wlanN interface is registered;
+# bringup-net.sh polls for the interface, so the race is handled.
+ACTION=="add",    SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="0e8d", ATTR{idProduct}=="7612", RUN+="/usr/bin/systemctl --no-block start ap-testbed.target"
+# On 'remove' the device attributes are gone; match the cached PRODUCT env
+# (idVendor/idProduct/bcd in hex, no leading zeros -> 0e8d/7612 => e8d/7612).
+ACTION=="remove", SUBSYSTEM=="usb", ENV{PRODUCT}=="e8d/7612/*", RUN+="/usr/bin/systemctl --no-block stop ap-testbed.target"

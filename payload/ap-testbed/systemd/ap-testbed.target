@@ -1,0 +1,6 @@
+[Unit]
+Description=AP Testbed (consent-gated device scanner, dongle-triggered)
+# Started/stopped by udev on MT7612U dongle plug/unplug (see 99-ap-testbed.rules).
+# Not enabled at boot — presence of the dongle is the switch.
+Wants=ap-testbed-net.service ap-testbed-hostapd.service ap-testbed-dnsmasq.service ap-testbed-portal.service
+After=ap-testbed-net.service

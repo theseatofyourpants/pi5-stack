@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Allowed devices</h1>
+<p class="muted">Devices on this list are <strong>pre-authorized</strong>: when one joins the AP it is
+auto-scanned on connect (no consent tap needed). Use it for your own bench devices.
+Devices not listed can still self-authorize via the captive consent portal.</p>
+
+{% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+
+<div class="card" style="margin-bottom:18px">
+  <form class="row" method="post" action="{{ url_for('devices_add') }}">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <input type="text" name="mac" placeholder="aa:bb:cc:dd:ee:ff" size="20" required>
+    <input type="text" name="label" placeholder="label (e.g. Test iPhone)" size="26">
+    <button type="submit">Add device</button>
+  </form>
+</div>
+
+{% if devices %}
+<table>
+  <tr><th>MAC</th><th>Label</th><th>Added</th><th></th></tr>
+  {% for d in devices %}
+  <tr>
+    <td class="mono">{{ d.mac }}</td>
+    <td>{{ d.label or '—' }}</td>
+    <td class="mono muted">{{ d.added }}</td>
+    <td class="row" style="gap:6px">
+      <form class="inline" method="post" action="{{ url_for('rescan') }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="mac" value="{{ d.mac }}">
+        <button type="submit" title="Clear cooldown and scan now (device must be connected)">rescan</button>
+      </form>
+      <form class="inline" method="post" action="{{ url_for('devices_reset') }}"
+            onsubmit="return confirm('Reset {{ d.mac }}? Clears its cooldown, consent and scan history so it acts new. Stays on the allowlist.')">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="mac" value="{{ d.mac }}">
+        <button class="ghost" type="submit" title="Forget cooldown/consent/history so it scans fresh next time">reset</button>
+      </form>
+      <form class="inline" method="post" action="{{ url_for('devices_remove') }}"
+            onsubmit="return confirm('Remove {{ d.mac }} from the allowlist?')">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="mac" value="{{ d.mac }}">
+        <button class="ghost" type="submit">remove</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}<p class="muted">No devices on the allowlist yet.</p>{% endif %}
+{% endblock %}

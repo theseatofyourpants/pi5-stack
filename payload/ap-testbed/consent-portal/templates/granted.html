@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security by The Seat of Your Pants — Authorized</title>
+<style>
+  :root{--bg:#0f1216;--card:#171b22;--fg:#e8ecf1;--mut:#8b95a3;--ok:#3ddc84;--line:#2a313c}
+  body{margin:0;font:16px/1.55 system-ui,sans-serif;background:var(--bg);color:var(--fg);
+       display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+  .card{max-width:32rem;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 30px;text-align:center}
+  .tag{display:inline-block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ok);
+       border:1px solid var(--ok);border-radius:6px;padding:2px 8px;margin-bottom:14px}
+  h1{margin:.1em 0 .3em;font-size:1.3rem}
+  p{color:var(--mut)}
+  .id{font:13px ui-monospace,monospace;background:#0c0f13;border:1px solid var(--line);border-radius:8px;padding:10px 12px;color:#cdd6e0;margin:14px 0}
+</style></head>
+<body>
+  <div class="card">
+    <div class="brand">Security by <b>The Seat of Your Pants</b></div>
+    <span class="tag">Authorized</span>
+    <h1>Consent recorded — scan started</h1>
+    <div class="id">{{MAC}} · {{IP}}</div>
+    <p>Your device is now in scope for this session only. The scan runs in the
+       background — you can dismiss this sheet and keep using the network.</p>
+    <p style="margin-top:14px">To watch progress and read your report anytime, open:</p>
+    <a class="statuslink" href="http://status.test/">http://status.test</a>
+    <p class="hint">💡 For the best view, <strong>close this sign-in window and open
+       <code>status.test</code> in your normal browser</strong> (Safari on iPhone, Chrome
+       on Android). The report and live updates work best in a real browser tab.</p>
+    <p class="fine">You can disconnect at any time to stop.</p>
+    <p class="foot">🛡️ <a href="https://who.theseatofyourpants.com">who.theseatofyourpants.com</a></p>
+  </div>
+  <style>
+    .brand{font-size:.9rem;font-weight:600;color:var(--mut);margin-bottom:14px;letter-spacing:.01em}
+    .brand b{color:#ffb02e;font-weight:700}
+    .foot{font-size:.78rem;margin-top:18px;padding-top:14px;border-top:1px solid var(--line);color:var(--mut)}
+    .foot a{color:#ffb02e;text-decoration:none}
+    .statuslink{display:block;text-align:center;margin:6px 0 2px;padding:12px;
+      background:#ffb02e;color:#1a1200;font-weight:700;border-radius:10px;
+      text-decoration:none;font-size:1.05rem}
+    .statuslink:hover{filter:brightness(1.06)}
+    .hint{font-size:.82rem;color:var(--mut);background:#1c2230;border:1px solid var(--line);
+      border-radius:8px;padding:10px 12px;margin-top:12px;line-height:1.5}
+    .hint code{color:var(--fg);background:#0c0f13;padding:1px 5px;border-radius:4px}
+    .fine{font-size:.8rem;color:var(--mut);margin-top:14px}
+  </style>
+</body></html>

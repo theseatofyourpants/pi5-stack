@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row" style="justify-content:space-between">
+  <h1 style="margin-bottom:.2em">Report — {{ s.mac }}</h1>
+  <div><a href="{{ url_for('report_pdf', sid=s.id) }}"><button class="ghost">Download PDF</button></a></div>
+</div>
+<p class="muted mono" style="margin-top:0">{{ s.ip }} · scan {{ s.id }} · {{ s.started }}</p>
+<div class="card report">{{ body|safe }}</div>
+<style>
+  .report{line-height:1.6}
+  .report h1,.report h2,.report h3{color:var(--fg);margin-top:1.2em}
+  .report h1{font-size:1.25rem;border-bottom:1px solid var(--line);padding-bottom:.3em}
+  .report code,.report pre{font-family:ui-monospace,Menlo,monospace;font-size:13px}
+  .report pre{background:#0a0d12;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+  .report table{margin:1em 0}
+  .report a{word-break:break-all}
+</style>
+{% endblock %}

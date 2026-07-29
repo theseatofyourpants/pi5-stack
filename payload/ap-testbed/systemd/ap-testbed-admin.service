@@ -1,0 +1,16 @@
+[Unit]
+Description=AP Testbed admin console (always-on: wlan0/tailscale management UI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tsoyp
+Environment=ADMIN_BIND=0.0.0.0
+Environment=ADMIN_PORT=8787
+ExecStart=/usr/bin/python3 /home/tsoyp/ap-testbed/admin/admin.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

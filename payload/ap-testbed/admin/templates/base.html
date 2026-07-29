@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AP Testbed Admin</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c2230; --line:#2a313c;
+    --fg:#e6edf3; --mut:#8b95a3; --acc:#ffb02e;
+    --ok:#3fb950; --warn:#d29922; --bad:#f85149; --off:#6e7681;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+  a{color:var(--acc);text-decoration:none} a:hover{text-decoration:underline}
+  header{display:flex;align-items:center;gap:22px;padding:12px 20px;
+         background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  header .brand{font-weight:700;letter-spacing:-.01em}
+  header .brand small{color:var(--mut);font-weight:400;margin-left:6px}
+  nav{display:flex;gap:6px;flex-wrap:wrap}
+  nav a{color:var(--mut);padding:6px 12px;border-radius:8px;font-size:14px}
+  nav a:hover{background:var(--panel2);color:var(--fg);text-decoration:none}
+  nav a.on{background:var(--panel2);color:var(--fg)}
+  main{max-width:1000px;margin:0 auto;padding:22px 20px 60px}
+  h1{font-size:1.3rem;margin:.2em 0 .8em}
+  h2{font-size:1.05rem;margin:1.4em 0 .6em;color:var(--fg)}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card .k{color:var(--mut);font-size:.8rem;text-transform:uppercase;letter-spacing:.06em}
+  .card .v{font-size:1.5rem;font-weight:700;margin-top:4px}
+  table{width:100%;border-collapse:collapse;background:var(--panel);
+        border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:14px}
+  th{color:var(--mut);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+  tr:last-child td{border-bottom:0}
+  .mono{font-family:ui-monospace,Menlo,monospace;font-size:13px}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:600}
+  .pill.ok{background:rgba(63,185,80,.15);color:var(--ok)}
+  .pill.warn{background:rgba(210,153,34,.15);color:var(--warn)}
+  .pill.bad{background:rgba(248,81,73,.15);color:var(--bad)}
+  .pill.off{background:rgba(110,118,129,.18);color:var(--off)}
+  form.inline{display:inline}
+  input[type=text]{background:var(--bg);border:1px solid var(--line);color:var(--fg);
+       padding:8px 10px;border-radius:8px;font:14px system-ui}
+  input[type=text]:focus{outline:2px solid var(--acc);border-color:var(--acc)}
+  button{background:var(--acc);color:#1a1200;border:0;padding:8px 14px;border-radius:8px;
+         font-weight:600;cursor:pointer;font-size:14px}
+  button:hover{filter:brightness(1.07)}
+  button.ghost{background:var(--panel2);color:var(--fg);border:1px solid var(--line)}
+  button.danger{background:var(--bad);color:#fff}
+  .msg{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+       padding:10px 14px;border-radius:8px;margin-bottom:16px;color:var(--fg)}
+  .muted{color:var(--mut)} .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  pre.log{background:#0a0d12;border:1px solid var(--line);border-radius:10px;padding:14px;
+       overflow:auto;max-height:460px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;
+       white-space:pre-wrap;word-break:break-word;color:#cdd6e0}
+</style></head>
+<body>
+<header>
+  <div class="brand">🛡️ Security by The Seat of Your Pants <small>· AP Testbed admin</small></div>
+  <nav>
+    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('devices') }}">Devices</a>
+    <a href="{{ url_for('consents') }}">Consents</a>
+    <a href="{{ url_for('scans') }}">Scans</a>
+    <a href="{{ url_for('settings') }}">Settings</a>
+  </nav>
+  <a class="site" href="https://who.theseatofyourpants.com" style="margin-left:auto;color:var(--mut);font-size:13px">who.theseatofyourpants.com ↗</a>
+</header>
+<main>{% block content %}{% endblock %}</main>
+</body></html>

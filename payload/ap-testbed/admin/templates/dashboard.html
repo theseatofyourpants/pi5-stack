@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="grid">
+  <div class="card"><div class="k">AP (hostapd)</div>
+    <div class="v">{% if st.hostapd %}<span class="pill ok">UP</span>{% else %}<span class="pill off">down</span>{% endif %}</div>
+    <div class="muted mono" style="font-size:12px;margin-top:6px">{{ st.iface or 'dongle out' }}</div></div>
+  <div class="card"><div class="k">SSID</div><div class="v" style="font-size:1.1rem">{{ st.ssid }}</div></div>
+  <div class="card"><div class="k">State</div>
+    <div class="v">{% if st.halt %}<span class="pill bad">HALT</span>{% elif st.armed %}<span class="pill warn">ARMED</span>{% else %}<span class="pill off">disarmed</span>{% endif %}</div></div>
+  <div class="card"><div class="k">Allowed devices</div><div class="v">{{ n_devices }}</div></div>
+  <div class="card"><div class="k">Total scans</div><div class="v">{{ n_scans }}</div></div>
+</div>
+
+{% if running %}
+<h2>Scans in progress</h2>
+<table>
+  <tr><th>Started</th><th>Device</th><th>Target</th><th>Status</th><th></th></tr>
+  {% for s in running %}
+  <tr><td class="mono">{{ s.started }}</td><td class="mono">{{ s.mac }}</td><td class="mono">{{ s.ip }}</td>
+      <td><span class="pill warn">running</span></td>
+      <td><a href="{{ url_for('scan_detail', sid=s.id) }}">watch →</a></td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<h2>Recent scans</h2>
+{% if recent %}
+<table>
+  <tr><th>Started</th><th>Device</th><th>Target</th><th>Auth</th><th>Status</th><th>Report</th></tr>
+  {% for s in recent %}
+  <tr>
+    <td class="mono">{{ s.started }}</td>
+    <td class="mono">{{ s.mac }}</td>
+    <td class="mono">{{ s.ip }}</td>
+    <td><span class="pill off">{{ s.auth }}</span></td>
+    <td>{% if s.status=='running' %}<span class="pill warn">running</span>{% elif s.status=='done' %}<span class="pill ok">done</span>{% else %}<span class="pill bad">{{ s.status }}</span>{% endif %}</td>
+    <td><a href="{{ url_for('scan_detail', sid=s.id) }}">view</a>{% if s.status=='done' %} · <a href="{{ url_for('report_html', sid=s.id) }}">html</a> · <a href="{{ url_for('report_pdf', sid=s.id) }}">pdf</a>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}<p class="muted">No scans yet.</p>{% endif %}
+{% endblock %}

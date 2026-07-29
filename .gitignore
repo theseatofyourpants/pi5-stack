@@ -1,0 +1,27 @@
+# --- secrets & runtime state (NEVER commit) ---
+secrets.env
+.bootstrap-state
+logs/
+
+# --- credentials / keys / certs of any kind ---
+*.pass
+*.cfg
+*.key
+*.pem
+*.crt
+*.p12
+.state.json
+
+# --- AP testbed mutable runtime (regenerated on install) ---
+payload/ap-testbed/state/admin.pass
+payload/ap-testbed/state/session-auth
+payload/ap-testbed/state/.last-*
+payload/ap-testbed/state/scans/
+payload/ap-testbed/logs/
+
+# --- python / build junk ---
+__pycache__/
+*.pyc
+venv/
+.venv/
+node_modules/

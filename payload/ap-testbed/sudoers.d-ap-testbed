@@ -1,0 +1,7 @@
+# AP Testbed — allow the admin console + portal (running as tsoyp) to do ONLY:
+#   1. control the ap-testbed systemd units (apply SSID / egress restarts)
+#   2. authorize/deauthorize a single MAC's egress (apt-testbed-authorize)
+# Nothing else. Installed to /etc/sudoers.d/ap-testbed (0440) after visudo -c.
+# apt-testbed-authorize lives in root-owned /usr/local/sbin (NOT tsoyp's home) so
+# a compromise of the tsoyp account can't rewrite a root-run script.
+tsoyp ALL=(root) NOPASSWD: /usr/bin/systemctl restart ap-testbed-hostapd.service, /usr/bin/systemctl restart ap-testbed-portal.service, /usr/bin/systemctl start ap-testbed.target, /usr/bin/systemctl stop ap-testbed.target, /usr/bin/systemctl restart ap-testbed.target, /usr/local/sbin/apt-testbed-authorize

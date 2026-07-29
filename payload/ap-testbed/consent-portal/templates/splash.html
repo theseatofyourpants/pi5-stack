@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security by The Seat of Your Pants — Consent Required</title>
+<style>
+  :root{--bg:#0f1216;--card:#171b22;--fg:#e8ecf1;--mut:#8b95a3;--acc:#ffb02e;--line:#2a313c}
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.55 system-ui,sans-serif;background:var(--bg);color:var(--fg);
+       display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+  .card{max-width:34rem;background:var(--card);border:1px solid var(--line);border-radius:14px;
+        padding:28px 30px;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+  h1{margin:0 0 6px;font-size:1.35rem;letter-spacing:-.01em}
+  .tag{display:inline-block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;
+       color:var(--acc);border:1px solid var(--acc);border-radius:6px;padding:2px 8px;margin-bottom:14px}
+  p{color:var(--mut);margin:.6em 0}
+  .id{font:13px ui-monospace,monospace;background:#0c0f13;border:1px solid var(--line);
+      border-radius:8px;padding:10px 12px;color:#cdd6e0;margin:14px 0}
+  ul{color:var(--mut);padding-left:1.1em}
+  li{margin:.3em 0}
+  .warn{color:#ff7a7a}
+  button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:10px;background:var(--acc);
+         color:#1a1200;font-weight:700;font-size:1rem;cursor:pointer}
+  button:hover{filter:brightness(1.06)}
+  .fine{font-size:.8rem;margin-top:14px}
+  .brand{font-size:.9rem;font-weight:600;color:var(--mut);margin-bottom:16px;letter-spacing:.01em}
+  .brand b{color:var(--acc);font-weight:700}
+  .foot{font-size:.78rem;margin-top:20px;padding-top:14px;border-top:1px solid var(--line);text-align:center;color:var(--mut)}
+  .foot a{color:var(--acc);text-decoration:none}
+  .statusnote{font-size:.85rem;color:var(--fg);background:#1c2230;border:1px solid var(--line);
+       border-radius:8px;padding:10px 12px;margin-top:14px;text-align:center;line-height:1.5}
+  .statusnote b{color:var(--acc)}
+</style></head>
+<body>
+  <div class="card">
+    <div class="brand">Security by <b>The Seat of Your Pants</b></div>
+    <span class="tag">Consent Required</span>
+    <h1>Automated device-security demo</h1>
+    <p>You've joined an <strong>isolated testing network</strong>. Connecting alone
+       does <strong>not</strong> authorize anything. If you continue, this rig will run a
+       <strong>non-destructive security scan of the device you're holding</strong> and show you the results.</p>
+    <div class="id">device&nbsp;=&nbsp;{{MAC}}<br>address&nbsp;=&nbsp;{{IP}}</div>
+    <ul>
+      <li>Only <strong>this</strong> device is scanned — nothing else on the network.</li>
+      <li>Read-only / non-destructive probes. No brute force, no data exfiltration.</li>
+      <li>The network is walled off from the internet and any other LAN.</li>
+      <li class="warn">Only proceed for a device <strong>you own or are authorized to test</strong>.</li>
+    </ul>
+    <form method="POST" action="/consent">
+      <input type="hidden" name="agree" value="1">
+      <button type="submit">I own this device and authorize a scan</button>
+    </form>
+    <p class="statusnote">📊 After you authorize, watch progress &amp; read your report at
+       <b>http://status.test</b> — open it in Safari/Chrome (not this sign-in window).</p>
+    <p class="fine">Close this page to decline. No scan runs without the click above.</p>
+    <p class="foot">🛡️ <a href="https://who.theseatofyourpants.com">who.theseatofyourpants.com</a></p>
+  </div>
+</body></html>
