@@ -30,8 +30,15 @@ iptables -A "$CHAIN" -p tcp --dport 53 -j ACCEPT
 # AP-client traffic (Docker/conntrack interaction), so :80 packets were dropped.
 # Owning :80 sidesteps NAT entirely and is the known-good captive-portal pattern.
 iptables -A "$CHAIN" -p tcp --dport 80 -j ACCEPT                       # consent portal (:80)
+iptables -A "$CHAIN" -p tcp --dport 443 -j ACCEPT                      # consent portal HTTPS (captive-API, RFC 8910)
 iptables -A "$CHAIN" -p tcp --dport "$PORTAL_PORT" -j ACCEPT           # portal alt-port if used
 iptables -A "$CHAIN" -p icmp -j ACCEPT
+# DNS-over-TLS (Private DNS, port 853): REJECT with a RST rather than blackhole, so
+# a phone on Private DNS=Automatic fails DoT INSTANTLY and falls back to plaintext
+# :53 (which we hijack). Silently dropping 853 stalls DNS — the #1 cause of "the
+# portal won't show" on modern Android/Samsung.
+iptables -A "$CHAIN" -p tcp --dport 853 -j REJECT --reject-with tcp-reset
+iptables -A "$CHAIN" -p udp --dport 853 -j REJECT --reject-with icmp-port-unreachable
 iptables -A "$CHAIN" -j DROP                                            # nothing else to the Pi
 
 # Clean up any stale REDIRECT rule from earlier attempts (no-op if absent).
@@ -55,7 +62,13 @@ if [ "$EGRESS" = "1" ]; then
   done
   iptables -D FORWARD -i "$AP_IFACE" -j APT_EGRESS 2>/dev/null || true
   iptables -A FORWARD -i "$AP_IFACE" -j APT_EGRESS
-  iptables -A FORWARD -i "$AP_IFACE" -o "$UPLINK_IFACE" -j DROP        # catch-all: unauthorized = no egress
+  # catch-all for unauthorized devices reaching the INTERNET: REJECT TCP with a RST
+  # (so OS captive HTTPS probes fail INSTANTLY and the device falls back to the HTTP
+  # probe we hijack -> the sign-in sheet pops fast instead of hanging on a timeout),
+  # and drop everything else. (LAN/private destinations were already silently dropped
+  # inside APT_EGRESS above.)
+  iptables -A FORWARD -i "$AP_IFACE" -o "$UPLINK_IFACE" -p tcp -j REJECT --reject-with tcp-reset
+  iptables -A FORWARD -i "$AP_IFACE" -o "$UPLINK_IFACE" -j DROP
   iptables -A FORWARD -i "$UPLINK_IFACE" -o "$AP_IFACE" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
   iptables -t nat -C POSTROUTING -s "$CIDR" -o "$UPLINK_IFACE" -j MASQUERADE 2>/dev/null || \
     iptables -t nat -A POSTROUTING -s "$CIDR" -o "$UPLINK_IFACE" -j MASQUERADE

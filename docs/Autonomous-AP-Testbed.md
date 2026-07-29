@@ -183,6 +183,34 @@ Operator identity **"Security by The Seat of Your Pants"** + site
 splash, granted screen, `status.test` report) and the admin console header. The
 Wi-Fi SSID stays **Open Security Test** (the network name, editable in Settings).
 
+## Captive-portal detection — the modern stack (what actually makes phones pop)
+Auto-popping the sign-in sheet reliably (esp. modern Android) took the full RFC
+8908/8910 path, not just probe-hijacking. In priority order:
+
+1. **DHCP option 114 → RFC 8908 API (the real trigger).** dnsmasq advertises
+   `dhcp-option=114,https://captive.theseatofyourpants.com/captive-api`. Android 11+/
+   iOS 14+ fetch that URL right after DHCP and act on `{"captive":true,"user-portal-url":…}`
+   — no probe-sniffing. Portal serves it at `/captive-api` (`application/captive+json`).
+2. **It MUST be HTTPS with a PUBLICLY-TRUSTED cert.** Self-signed is **rejected**
+   (verified via tcpdump: device did TLS ClientHello → got our self-signed cert →
+   sent a fatal alert → gave up). Fix: a real **Let's Encrypt** cert for
+   `captive.theseatofyourpants.com` (issued via **Cloudflare DNS-01**, certbot
+   `--dns-cloudflare`), and dnsmasq **hijacks that name → 10.66.66.1** so it resolves
+   to the local portal while presenting a genuinely valid cert. `deploy-cert.sh`
+   (`--deploy-hook`) copies the cert to `state/portal-cert.pem` + reloads the portal;
+   the portal serves `:443` from it (falls back to a self-signed cert if absent).
+3. **Fallback probes** (older devices): DNS-hijack the OS probe domains →
+   `302` on `:80` (not a 200 body). 
+4. **Fail FAST, never blackhole** (research-backed): unauthorized `:443` egress and
+   `:853` (DoT / Private DNS) get an **instant RST**, so probes fail immediately and
+   the device falls back rather than hanging through the retry window.
+
+> [!note] Device-side gotchas we hit (documented for future debugging)
+> Carrier Android bails to **cellular** on validation failure (turn mobile data OFF
+> to test) and uses **Private DNS** (DoT) that must fail fast. `adb shell dumpsys
+> connectivity` shows NetworkMonitor's verdict. A self-signed option-114 cert is the
+> classic silent failure — the device fetches nothing and logs nothing.
+
 ## Per-device status page (`status.test`)
 dnsmasq also hijacks `status.test` / `report.test` → the portal. The portal serves a
 **MAC-scoped** status page: a device sees only *its own* scan — live streaming

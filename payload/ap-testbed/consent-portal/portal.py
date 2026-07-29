@@ -175,6 +175,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
         ip = self._client_ip()
         mac = mac_for_ip(ip)
         host = self.headers.get("Host", "").lower()
+        # RFC 8908 Captive-Portal API — the modern positive signal advertised via
+        # DHCP option 114 (RFC 8910). Android 11+/iOS 14+ query this and act on it
+        # directly, bypassing HTTP-probe interception entirely (works on carrier
+        # Androids that only validate over HTTPS).
+        if self.path in ("/captive-api", "/.well-known/captive-portal"):
+            authorized = bool(mac and store.is_authorized(mac))
+            body = json.dumps({"captive": (not authorized),
+                               "user-portal-url": "http://%s/" % BIND}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/captive+json")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         # Per-device status/report page (friendly local domain or /status path).
         if "status.test" in host or "report.test" in host or self.path.startswith("/status"):
             return self._status_page(ip, mac)
@@ -186,9 +201,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
                        "/library/test/success.html", "/ncsi.txt", "/connecttest.txt",
                        "/success.txt", "/canonical.html")
         is_probe = any(h in host for h in probe_hosts) or self.path in probe_paths
-        if is_probe and mac and store.is_authorized(mac):
-            return self._captive_success(host)
-        # unauthorized probe, or any normal page -> the consent splash
+        if is_probe:
+            if mac and store.is_authorized(mac):
+                return self._captive_success(host)
+            # unauthorized probe -> 302 to the portal. A redirect is the strongest
+            # captive signal for the Android/iOS network-check assistants (stronger
+            # than a 200 body), so the "sign in to network" sheet pops reliably.
+            self.send_response(302)
+            self.send_header("Location", "http://%s/" % BIND)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        # any normal page (or the portal root) -> the consent splash
         self._send(self._splash(ip, mac))
 
     def do_POST(self):
@@ -220,9 +244,41 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._send(page("splash.html").replace("{{IP}}", html.escape(ip)).replace("{{MAC}}", html.escape(mac or "unknown")), code=400)
 
 
+def _ensure_cert():
+    """Self-signed cert for the AP IP (RFC 8910 prefers an HTTPS captive-API URL).
+    Stored in state/ (git-ignored via *.pem); generated once if missing."""
+    cert = os.path.join(BASE, "state", "portal-cert.pem")
+    key = os.path.join(BASE, "state", "portal-key.pem")
+    if not (os.path.exists(cert) and os.path.exists(key)):
+        subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes",
+                        "-keyout", key, "-out", cert, "-days", "3650",
+                        "-subj", "/CN=%s" % BIND,
+                        "-addext", "subjectAltName=IP:%s" % BIND],
+                       check=True, capture_output=True)
+    return cert, key
+
+
+def _serve(bind, port, tls=False):
+    socketserver.TCPServer.allow_reuse_address = True
+    httpd = socketserver.TCPServer((bind, port), Handler)
+    if tls:
+        import ssl
+        cert, key = _ensure_cert()
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(cert, key)
+        httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
+    httpd.serve_forever()
+
+
 if __name__ == "__main__":
     os.makedirs(LOGS, exist_ok=True)
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer((BIND, PORT), Handler) as httpd:
-        print("consent-portal on %s:%d  (ledger: %s)" % (BIND, PORT, ALLOWLIST))
-        httpd.serve_forever()
+    import threading
+    # HTTPS listener on :443 so option 114 can advertise an https:// captive-API URL
+    # (some Android NetworkStack builds refuse to fetch a plaintext option-114 URL).
+    try:
+        threading.Thread(target=_serve, args=(BIND, 443, True), daemon=True).start()
+        print("consent-portal TLS on %s:443" % BIND)
+    except Exception as e:
+        print("[WARN] HTTPS listener failed (continuing HTTP-only): %s" % e)
+    print("consent-portal on %s:%d  (ledger: %s)" % (BIND, PORT, ALLOWLIST))
+    _serve(BIND, PORT, False)

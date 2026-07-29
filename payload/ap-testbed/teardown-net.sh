@@ -13,6 +13,7 @@ log(){ echo "[teardown] $*"; }
 # Remove the interface-scoped filter rules.
 if [ -n "$IFACE" ]; then
   iptables -D INPUT  -i "$IFACE" -j APTESTBED 2>/dev/null || true
+  iptables -D FORWARD -i "$IFACE" -o "${UPLINK:-none}" -p tcp -j REJECT --reject-with tcp-reset 2>/dev/null || true
   iptables -D FORWARD -i "$IFACE" -o "${UPLINK:-none}" -j DROP 2>/dev/null || true
   iptables -D FORWARD -i "$IFACE" -o "$IFACE" -j DROP 2>/dev/null || true
   iptables -D FORWARD -i "${UPLINK:-none}" -o "$IFACE" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
