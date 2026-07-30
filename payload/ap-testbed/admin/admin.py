@@ -214,27 +214,35 @@ def _sensor_status():
     Graceful if the log isn't readable/present — surfaces the one-line fix."""
     candidates = ["/var/log/suricata/eve.json", "/var/log/suricata/hotpot/eve.json"]
     out = {"available": False, "alert_count": 0, "alerts": [], "note": ""}
-    lines = None
+    # Choose the FRESHEST readable log so the dashboard always follows the live
+    # sensor — e.g. after handing off from a manual instance to the hot-pot's own
+    # Suricata, the old default-path eve.json goes stale and must not win.
+    readable = []
     existed_unreadable = None
     for path in candidates:
         try:
-            with open(path) as f:
-                lines = f.readlines()[-3000:]
-            break
-        except PermissionError:
+            mt = os.stat(path).st_mtime
+        except OSError:
+            continue
+        if os.access(path, os.R_OK):
+            readable.append((mt, path))
+        else:
             existed_unreadable = path
-        except FileNotFoundError:
-            pass
-        except Exception as ex:
-            out["note"] = "sensor read error: %s" % ex
-            return out
-    if lines is None:
+    if not readable:
         if existed_unreadable:
             out["note"] = ("suricata log not readable by this user — run:  "
                            "sudo setfacl -m u:tsoyp:r %s" % existed_unreadable)
         else:
             out["note"] = ("suricata eve.json not found — sensor down (arm the hot-pot to "
                            "start IDS on the AP, or see /stack-status)")
+        return out
+    readable.sort(reverse=True)
+    path = readable[0][1]
+    try:
+        with open(path) as f:
+            lines = f.readlines()[-3000:]
+    except Exception as ex:
+        out["note"] = "sensor read error: %s" % ex
         return out
     recent = []
     for ln in lines:

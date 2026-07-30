@@ -158,7 +158,9 @@ pays off:
   (`/var/log/suricata/hotpot/`) so it never collides with a host-wide Suricata — and
   auto-grants the admin user read (`setfacl`) so the dashboard Alerts panel populates.
   It defers to any Suricata already watching `wlan1`, and tears down on disarm/unplug.
-  The dashboard reads whichever log is present (host-wide or hot-pot).
+  The dashboard reads the **freshest** of the host-wide / hot-pot `eve.json` logs, so
+  it follows the live sensor even after handing off from a manual instance to the
+  managed one (a stale default-path log never wins).
 - **[[Network-Sensors|Zeek]]** — `conn`/`ssh`/`http`/`x509` logs on the AP subnet
   give rich attribution metadata and **JA3/JA4/HASSH** client fingerprints of the
   prober's tooling.
