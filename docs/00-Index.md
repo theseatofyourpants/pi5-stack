@@ -58,6 +58,7 @@ Custom `~/.claude/agents/*.md` orchestrators. Index: [[Operator-Skills]]
 
 ## 🏗️ Infrastructure
 
+- [[C2-Primer]] — **how Sliver & Mythic actually work** (session vs beacon, listeners, agents, pivoting) — start here if C2 is new
 - [[Sliver-Server]] — Sliver daemon + operator config
 - [[Mythic-Server]] — Mythic Docker stack
 - [[Network-Sensors]] — Suricata + Zeek + bettercap
