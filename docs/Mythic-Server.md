@@ -7,7 +7,7 @@ updated: 2026-07-27
 
 # Mythic C2 Server
 
-Back to [[00-Index]]. The backend behind [[mcp-mythic]].
+Back to [[00-Index]]. The backend behind [[mcp-mythic]]. New to C2? Start with the [[C2-Primer]].
 
 ## What it is
 Mythic v3.4.0 C2 — a multi-agent, multi-operator framework running as 8 Docker containers, managed by `mythic-cli` (built with [[Replication-Guide|Go 1.26.5]]).
@@ -28,4 +28,4 @@ cd ~/Mythic && ./mythic-cli status
 - [[mcp-mythic]] → skills [[engagement-start]], [[generate-payload]], [[pivot-analysis]], [[triage-alerts]], [[detection-engineer]], [[debrief]]
 
 ## Related
-- [[Sliver-Server]] · [[Architecture-Overview]]
+- [[C2-Primer]] (how C2 works, conceptually) · [[Sliver-Server]] · [[Architecture-Overview]]

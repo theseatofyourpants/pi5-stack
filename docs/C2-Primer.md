@@ -133,6 +133,11 @@ The whole lifecycle is already wired (see [[Operator-Skills]]):
 
 ## 6. A safe first walkthrough (lab only)
 
+> [!todo] Planned — guided hands-on run
+> Operator wants to do this walkthrough interactively, with Claude narrating each
+> MCP call, against a lab VM — **at some point, not yet scheduled** (noted 2026-07-30).
+> When ready: start from [[stack-status]], then the Sliver beacon steps below.
+
 Against a throwaway VM you own:
 
 1. **[[stack-status]]** — confirm Sliver + Mythic are up.

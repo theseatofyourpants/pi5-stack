@@ -7,7 +7,7 @@ updated: 2026-07-27
 
 # Sliver C2 Server
 
-Back to [[00-Index]]. The backend behind [[mcp-sliver-c2]].
+Back to [[00-Index]]. The backend behind [[mcp-sliver-c2]]. New to C2? Start with the [[C2-Primer]].
 
 ## What it is
 Sliver v1.7.3 (BishopFox) C2 framework, arm64. Runs as a multiplayer daemon so the MCP operator client can connect over mTLS.
@@ -32,4 +32,4 @@ nohup ~/.local/bin/sliver-server daemon > /tmp/sliver-server.log 2>&1 &
 - [[mcp-sliver-c2]] → skills [[generate-payload]], [[pivot-analysis]], [[triage-alerts]], [[debrief]], [[engagement-start]]
 
 ## Related
-- [[Mythic-Server]] (the other C2 backend) · [[Architecture-Overview]]
+- [[C2-Primer]] (how C2 works, conceptually) · [[Mythic-Server]] (the other C2 backend) · [[Architecture-Overview]]
