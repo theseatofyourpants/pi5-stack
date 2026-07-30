@@ -28,3 +28,6 @@ node_modules/
 
 # --- hot-pot: ship Cowrie config (explicit exception to *.cfg) ---
 !payload/ap-testbed/hotpot/cowrie/etc/cowrie.cfg
+
+# --- scoped device tokens (e-ink panel etc.) ---
+*.token

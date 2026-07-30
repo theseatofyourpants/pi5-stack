@@ -1,0 +1,6 @@
+# Pure-python deps for panel.py (the HTTP fetch uses stdlib urllib — no requests).
+Pillow>=9.0
+# The Waveshare driver (waveshare_epd) is NOT on PyPI — install.sh vendors it from
+# github.com/waveshareteam/e-Paper. It in turn needs (install via apt on the Zero):
+#   python3-numpy  python3-spidev  python3-rpi.gpio   (Bullseye)
+#   on Bookworm, RPi.GPIO is replaced by lgpio/gpiozero — see README.

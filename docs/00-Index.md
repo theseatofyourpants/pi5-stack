@@ -66,6 +66,7 @@ Custom `~/.claude/agents/*.md` orchestrators. Index: [[Operator-Skills]]
 - [[Autonomous-AP-Testbed]] — dongle-triggered consent-gated AP that scans devices that opt in (hybrid captive + per-MAC egress)
 - [[Adversarial-Honeypot-Hotpot]] — deception layer on the same AP: fake bait services + honeytokens that observe & attribute unbidden probers (no compromise of the prober)
 - [[wifi-failsafe]] — fallback AP + captive portal on wlan0 when the Pi loses Wi-Fi
+- [[Eink-Panel]] — Pi Zero 2 W + 2.13" e-ink companion: glanceable hardware status board (polls the admin console's /api/panel)
 
 ## 🔑 Fast facts
 

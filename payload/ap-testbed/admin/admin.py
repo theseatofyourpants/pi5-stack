@@ -9,7 +9,7 @@ Runs as tsoyp. The ONE privileged action (restart hostapd to apply an SSID
 change) goes through a narrowly scoped sudoers rule.
 """
 import os, sys, hmac, hashlib, subprocess, shutil, tempfile, html as _html
-import json, re, time
+import json, re, time, socket
 from functools import wraps
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lib"))
@@ -362,6 +362,58 @@ def _dashboard_payload():
     }
 
 
+# ---- e-ink panel (Pi Zero 2 W companion) -----------------------------------
+PANEL_TOKEN_FILE = os.environ.get("PANEL_TOKEN_FILE", os.path.join(BASE, "state", "panel.token"))
+
+
+def _panel_token():
+    try:
+        return open(PANEL_TOKEN_FILE).read().strip()
+    except Exception:
+        return ""
+
+
+def _c2_status():
+    """Best-effort up/down for the C2 backends (the admin app has no MCP, so this is
+    a liveness probe, not a session count). Sliver = multiplayer gRPC port listening;
+    Mythic = at least one mythic_* container running."""
+    sliver = False
+    try:
+        with socket.create_connection(("127.0.0.1", 31337), timeout=0.5):
+            sliver = True
+    except Exception:
+        sliver = False
+    mythic = False
+    try:
+        r = subprocess.run(["docker", "ps", "--filter", "name=mythic", "--format", "{{.Names}}"],
+                           capture_output=True, text=True, timeout=4)
+        mythic = any(l.strip() for l in r.stdout.splitlines())
+    except Exception:
+        mythic = False
+    return {"sliver": sliver, "mythic": mythic}
+
+
+def _panel_payload():
+    """Compact status for a ~250x122 e-ink panel — a subset of the dashboard plus
+    C2 backend up/down. Small and stable so a low-power poller can render it."""
+    d = _dashboard_payload()
+    c2 = _c2_status()
+    la = d["alerts"][0] if d["alerts"] else None
+    return {
+        "ts": d["generated"],
+        "ssid": d["st"].get("ssid", ""), "ap": bool(d["st"].get("hostapd")),
+        "hotpot": d["cfg"]["deception"], "egress": d["cfg"]["egress"],
+        "ids": d["sensors"]["available"],
+        "sliver": c2["sliver"], "mythic": c2["mythic"],
+        "scans_total": d["kpi"]["scans_total"], "scans_running": d["kpi"]["scans_running"],
+        "probers": d["kpi"]["probers"], "token_trips": d["kpi"]["token_trips"],
+        "loot_pulls": d["kpi"]["loot_pulls"], "alerts": d["kpi"]["alerts"],
+        "findings_hi": d["kpi"]["findings_hi"],
+        "last_alert": ({"sev": la["sev"], "kind": la["kind"], "src": la["src"], "when": la["ts"]}
+                       if la else None),
+    }
+
+
 # ---- routes ----------------------------------------------------------------
 @app.route("/")
 @require_auth
@@ -373,6 +425,22 @@ def dashboard():
 @require_auth
 def api_dashboard():
     return Response(json.dumps(_dashboard_payload()), mimetype="application/json")
+
+
+@app.route("/api/panel")
+def api_panel():
+    """Read-only status for the e-ink companion. Auth via a SCOPED panel token
+    (state/panel.token) supplied as ?token= or X-Panel-Token — so the low-power
+    device never holds the admin password. Falls back to admin Basic-Auth."""
+    tok = _panel_token()
+    supplied = request.args.get("token", "") or request.headers.get("X-Panel-Token", "")
+    ok = bool(tok) and hmac.compare_digest(supplied, tok)
+    if not ok:
+        au = request.authorization
+        ok = bool(au) and _check_auth(au.username or "", au.password or "")
+    if not ok:
+        return Response("unauthorized", 401)
+    return Response(json.dumps(_panel_payload()), mimetype="application/json")
 
 
 @app.route("/devices", methods=["GET"])

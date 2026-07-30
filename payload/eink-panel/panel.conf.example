@@ -1,0 +1,14 @@
+# eink-panel config — copy to /etc/eink-panel.conf on the Pi Zero and fill in.
+# The panel authenticates with a SCOPED, read-only token — NOT the admin password.
+# Get the token from the Pi 5:   cat ~/ap-testbed/state/panel.token
+
+PI5_URL=http://<pi5-ip-or-tailscale-name>:8787
+PANEL_TOKEN=<paste-panel.token-from-the-pi5>
+
+# Your HAT revision — the 2.13" comes as V2 / V3 / V4. If the screen stays blank or
+# garbled, this is the first thing to change. (V4 is the current one.)
+EPD_DRIVER=epd2in13_V4
+
+POLL_SECONDS=60
+ROTATE=0                    # set 180 if the HAT is mounted upside down
+FONT_DIR=/usr/share/fonts/truetype/dejavu

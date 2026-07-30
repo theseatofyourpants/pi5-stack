@@ -1,0 +1,16 @@
+[Unit]
+Description=SEAT OPS e-ink panel (Pi 5 red/blue stack companion)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Root: the Waveshare driver needs SPI + GPIO access. Config (incl. the scoped
+# panel token) lives in /etc/eink-panel.conf, mode 600.
+Environment=EINK_PANEL_CONF=/etc/eink-panel.conf
+ExecStart=/usr/bin/python3 /opt/eink-panel/panel.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
