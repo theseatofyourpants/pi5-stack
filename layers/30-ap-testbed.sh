@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # layers/30-ap-testbed.sh — deploy + install the autonomous AP testbed to
 # ~/ap-testbed and run its installer (systemd units, udev, sudoers, egress helper,
-# admin console). Also installs certbot for the trusted captive-portal cert.
+# admin console). Also installs certbot for the trusted captive-portal cert and,
+# if Docker is present, the hot-pot adversarial deception layer.
 set -euo pipefail
 source "$STACK_ROOT/lib/common.sh"
 
@@ -14,8 +15,11 @@ rsync -a \
   --exclude 'state/scans/' --exclude 'state/admin.pass' \
   --exclude 'state/portal-cert.pem' --exclude 'state/portal-key.pem' \
   --exclude 'state/config.json' --exclude 'state/devices.json' \
+  --exclude 'state/hotpot-tokens.json' --exclude 'state/canarytokens.json' \
+  --exclude 'hotpot/smb/share/*' --exclude 'hotpot/tokens/*' \
   "$STACK_ROOT/payload/ap-testbed/" "$DEST/"
 chmod +x "$DEST"/*.sh "$DEST"/consent-portal/portal.py "$DEST"/lib/store.py 2>/dev/null || true
+chmod +x "$DEST"/hotpot/*.sh "$DEST"/hotpot/seed-tokens.py 2>/dev/null || true
 
 # Install systemd units + udev + scoped sudoers + egress helper + admin console.
 log "running install-testbed.sh…"
@@ -26,6 +30,16 @@ as_root bash "$DEST/install-testbed.sh"
 log "installing certbot + Cloudflare DNS plugin…"
 as_root apt-get install -y certbot python3-certbot-dns-cloudflare \
   || warn "certbot install failed — captive cert step will need manual setup"
+
+# Hot-pot adversarial deception layer (optional; needs Docker + compose). Installs
+# the ap-testbed-hotpot.service unit, extends sudoers, and pre-builds the bait
+# containers. Stays OFF (config.deception=false) until armed in the admin console.
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  log "installing hot-pot deception layer…"
+  as_root bash "$DEST/install-hotpot.sh" || warn "hot-pot install failed — arm later via admin console"
+else
+  warn "Docker/compose not found — skipping hot-pot. Install Docker, then: sudo bash $DEST/install-hotpot.sh"
+fi
 
 stop_for_manual "Trusted captive-portal cert (optional but recommended)" \
   "For modern Android to AUTO-POP the sign-in sheet, the captive-portal API must be" \
@@ -50,6 +64,8 @@ stop_for_manual "Plug in the Wi-Fi dongle" \
 
 verify "admin service enabled" bash -lc 'systemctl is-enabled ap-testbed-admin 2>/dev/null | grep -q enabled'
 verify "egress helper installed" test -x /usr/local/sbin/apt-testbed-authorize
+verify "hot-pot unit present" test -f /etc/systemd/system/ap-testbed-hotpot.service
 ok "30-ap-testbed done."
 log "Admin console: http://<this-host-ip>:8787  (password was printed above)."
 log "NOTE: device scans need the MCP backends from layer 20-mcp-core (hexstrike/kali-server)."
+log "NOTE: the hot-pot deception layer is OFF by default — arm it in the admin 'Hot-pot' tab."

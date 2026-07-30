@@ -54,6 +54,7 @@ Custom `~/.claude/agents/*.md` orchestrators. Index: [[Operator-Skills]]
 | `/debrief` | Reporting | [[debrief]] |
 | `/engagement-backup` | Data protection | [[engagement-backup]] |
 | `/device-assess` | Unattended device scan (testbed) | [[device-assess]] |
+| `/hotpot-maintain` | Deception-layer keeper (testbed) | [[hotpot-maintain]] |
 
 ## 🏗️ Infrastructure
 
@@ -62,6 +63,7 @@ Custom `~/.claude/agents/*.md` orchestrators. Index: [[Operator-Skills]]
 - [[Network-Sensors]] — Suricata + Zeek + bettercap
 - [[Detection-Library]] — the growing Sigma/YARA/network rule corpus
 - [[Autonomous-AP-Testbed]] — dongle-triggered consent-gated AP that scans devices that opt in (hybrid captive + per-MAC egress)
+- [[Adversarial-Honeypot-Hotpot]] — deception layer on the same AP: fake bait services + honeytokens that observe & attribute unbidden probers (no compromise of the prober)
 - [[wifi-failsafe]] — fallback AP + captive portal on wlan0 when the Pi loses Wi-Fi
 
 ## 🔑 Fast facts

@@ -9,6 +9,7 @@ Runs as tsoyp. The ONE privileged action (restart hostapd to apply an SSID
 change) goes through a narrowly scoped sudoers rule.
 """
 import os, sys, hmac, hashlib, subprocess, shutil, tempfile, html as _html
+import json, re, time
 from functools import wraps
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lib"))
@@ -142,16 +143,218 @@ def apply_target_restart():
             pass
 
 
+def hotpot_restart():
+    """Apply a deception on/off change by (re)starting the hot-pot unit via the
+    scoped sudoers rule. Safe no-op if the AP is down (the unit self-gates on the
+    deception flag + AP presence)."""
+    try:
+        subprocess.run(["sudo", "-n", "systemctl", "restart",
+                        "ap-testbed-hotpot.service"], timeout=180)
+    except Exception:
+        pass
+
+
+# ---- dashboard aggregation -------------------------------------------------
+SEVERITIES = ["Critical", "High", "Medium", "Low", "Info"]
+EVENT_TYPES = ["probe", "cred_attempt", "loot_pull", "token_trip"]
+_sev_cache = {}   # report_path -> (mtime, {severity: count})
+
+
+def _ts_epoch(s):
+    try:
+        return time.mktime(time.strptime((s or "")[:19], "%Y-%m-%dT%H:%M:%S"))
+    except Exception:
+        return None
+
+
+def _parse_severities(path):
+    """Approximate finding-severity tally from a device-assess report (markdown).
+    Cached by file mtime so polling stays cheap."""
+    try:
+        mt = os.stat(path).st_mtime
+    except OSError:
+        return {s: 0 for s in SEVERITIES}
+    hit = _sev_cache.get(path)
+    if hit and hit[0] == mt:
+        return hit[1]
+    counts = {s: 0 for s in SEVERITIES}
+    try:
+        txt = open(path, errors="ignore").read()
+    except Exception:
+        txt = ""
+    # primary: an explicit "Severity: High" / "**Severity:** High" / "| High |"
+    for m in re.finditer(r'(?i)severity[^A-Za-z0-9]{0,6}(critical|high|medium|low|info)', txt):
+        counts[m.group(1).capitalize()] += 1
+    if sum(counts.values()) == 0:   # fallback: finding rows/bullets naming a severity
+        for line in txt.splitlines():
+            if re.match(r'\s*([-*|>#]|\d+\.)', line):
+                m = re.search(r'(?i)\b(critical|high|medium|low|info)\b', line)
+                if m:
+                    counts[m.group(1).capitalize()] += 1
+    _sev_cache[path] = (mt, counts)
+    return counts
+
+
+def _timeline(events, hours=24, buckets=24):
+    now = time.time(); start = now - hours * 3600; width = (hours * 3600) / buckets
+    grid = [{"t": int(start + i * width), **{t: 0 for t in EVENT_TYPES}} for i in range(buckets)]
+    for e in events:
+        ep = _ts_epoch(e.get("ts", ""))
+        if ep is None or ep < start:
+            continue
+        idx = min(buckets - 1, max(0, int((ep - start) / width)))
+        ty = e.get("type", "probe"); ty = ty if ty in EVENT_TYPES else "probe"
+        grid[idx][ty] += 1
+    return {"buckets": grid, "types": EVENT_TYPES, "hours": hours}
+
+
+def _sensor_status():
+    """Best-effort Suricata alert feed. Graceful if the log isn't readable as the
+    admin user (the common case) — surfaces the one-line fix instead of failing."""
+    path = "/var/log/suricata/eve.json"
+    out = {"available": False, "alert_count": 0, "alerts": [], "note": ""}
+    try:
+        with open(path) as f:
+            lines = f.readlines()[-3000:]
+    except PermissionError:
+        out["note"] = ("suricata eve.json not readable by this user — run:  "
+                       "sudo setfacl -m u:tsoyp:r /var/log/suricata/eve.json")
+        return out
+    except FileNotFoundError:
+        out["note"] = "suricata eve.json not found — sensor may be down (see /stack-status)"
+        return out
+    except Exception as ex:
+        out["note"] = "sensor read error: %s" % ex
+        return out
+    recent = []
+    for ln in lines:
+        try:
+            j = json.loads(ln)
+        except Exception:
+            continue
+        if j.get("event_type") == "alert":
+            a = j.get("alert", {})
+            recent.append({"ts": (j.get("timestamp", "") or "")[:19],
+                           "sig": a.get("signature", ""), "sev": a.get("severity", 3),
+                           "src": j.get("src_ip", ""), "dest": j.get("dest_ip", "")})
+    out["available"] = True
+    out["alert_count"] = len(recent)
+    out["alerts"] = recent[-20:][::-1]
+    return out
+
+
+def _dashboard_payload():
+    cfg = store.load_config()
+    scans = store.list_scans()
+    running = []
+    status_counts = {}
+    sev_totals = {s: 0 for s in SEVERITIES}
+    for s in scans:
+        st = s.get("status", "?")
+        status_counts[st] = status_counts.get(st, 0) + 1
+        if st == "running":
+            elapsed = ""
+            ep = _ts_epoch(s.get("started", ""))
+            if ep:
+                elapsed = int(time.time() - ep)
+            running.append({"id": s.get("id"), "mac": s.get("mac"), "ip": s.get("ip"),
+                            "started": s.get("started"), "elapsed": elapsed})
+        if st == "done" and s.get("report_md"):
+            for k, v in _parse_severities(s["report_md"]).items():
+                sev_totals[k] += v
+    recent_scans = [{"id": s.get("id"), "mac": s.get("mac"), "ip": s.get("ip"),
+                     "auth": s.get("auth"), "status": s.get("status"),
+                     "started": s.get("started")} for s in scans[:10]]
+
+    events = store.list_hotpot_events(limit=3000)
+    ev_by_type = {t: 0 for t in EVENT_TYPES}
+    sources = {}
+    for e in events:
+        t = e.get("type", "probe")
+        ev_by_type[t] = ev_by_type.get(t, 0) + 1
+        src = e.get("src", "?")
+        r = sources.setdefault(src, {"src": src, "events": 0, "creds": 0, "loot": 0,
+                                     "trips": 0, "probes": 0, "last": ""})
+        r["events"] += 1
+        if t == "cred_attempt": r["creds"] += 1
+        elif t == "loot_pull":  r["loot"] += 1
+        elif t == "token_trip": r["trips"] += 1
+        elif t == "probe":      r["probes"] += 1
+        if e.get("ts", "") > r["last"]:
+            r["last"] = e.get("ts", "")
+    sources = sorted(sources.values(), key=lambda r: r["last"], reverse=True)
+
+    tokens = store.load_tokens()
+    trip_by_token = {}
+    for e in events:
+        if e.get("type") == "token_trip":
+            trip_by_token.setdefault(e.get("token"), []).append(e)
+    tok_view = []
+    for t in tokens:
+        tr = trip_by_token.get(t.get("id"), [])
+        tok_view.append({"file": t.get("file"), "kind": t.get("kind"), "backend": t.get("backend"),
+                         "beacon": t.get("beacon"), "trips": len(tr),
+                         "last": (tr[-1].get("ts") if tr else (t.get("tripped") or "")),
+                         "last_src": (tr[-1].get("src") if tr else "")})
+
+    # synthesized alert stream: token trips (critical), loot pulls (serious),
+    # credential bursts (warning), + Suricata (best-effort).
+    alerts = []
+    for e in events:
+        if e.get("type") == "token_trip":
+            alerts.append({"ts": e.get("ts", ""), "sev": "critical", "kind": "Canary token tripped",
+                           "src": e.get("src", ""), "detail": "token %s" % e.get("token", "")})
+        elif e.get("type") == "loot_pull":
+            alerts.append({"ts": e.get("ts", ""), "sev": "serious", "kind": "Bait loot pulled",
+                           "src": e.get("src", ""), "detail": e.get("file", "")})
+    for r in sources:
+        if r["creds"] >= 10:
+            alerts.append({"ts": r["last"], "sev": "warning", "kind": "Credential burst",
+                           "src": r["src"], "detail": "%d login attempts" % r["creds"]})
+    sensors = _sensor_status()
+    for a in sensors["alerts"]:
+        sev = "critical" if a["sev"] == 1 else ("serious" if a["sev"] == 2 else "warning")
+        alerts.append({"ts": a["ts"], "sev": sev, "kind": "IDS: " + (a["sig"] or "alert"),
+                       "src": a["src"], "detail": "%s → %s" % (a["src"], a["dest"])})
+    alerts.sort(key=lambda a: a.get("ts", ""), reverse=True)
+    alerts = alerts[:30]
+
+    return {
+        "st": ap_status(),
+        "cfg": {"deception": bool(cfg.get("deception")), "egress": bool(cfg.get("egress")),
+                "token_backend": cfg.get("token_backend", "local")},
+        "kpi": {"devices": len(store.load_devices()), "scans_total": len(scans),
+                "scans_running": len(running), "probers": len(sources),
+                "events_total": len(events), "token_trips": ev_by_type.get("token_trip", 0),
+                "loot_pulls": ev_by_type.get("loot_pull", 0),
+                "findings_hi": sev_totals["Critical"] + sev_totals["High"],
+                "alerts": len(alerts)},
+        "severity": sev_totals,
+        "scan_status": status_counts,
+        "events_by_type": ev_by_type,
+        "timeline": _timeline(events),
+        "sources": sources[:12],
+        "tokens": tok_view,
+        "alerts": alerts,
+        "running": running,
+        "recent_scans": recent_scans,
+        "sensors": {"available": sensors["available"], "note": sensors["note"],
+                    "count": sensors["alert_count"]},
+        "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+
+
 # ---- routes ----------------------------------------------------------------
 @app.route("/")
 @require_auth
 def dashboard():
-    scans = store.list_scans()
-    running = [s for s in scans if s.get("status") == "running"]
-    return render_template("dashboard.html", st=ap_status(),
-                           n_devices=len(store.load_devices()),
-                           n_scans=len(scans), running=running,
-                           recent=scans[:8])
+    return render_template("dashboard.html", data=_dashboard_payload())
+
+
+@app.route("/api/dashboard")
+@require_auth
+def api_dashboard():
+    return Response(json.dumps(_dashboard_payload()), mimetype="application/json")
 
 
 @app.route("/devices", methods=["GET"])
@@ -377,6 +580,61 @@ def settings_auto_abort():
     cfg["auto_abort"] = (request.form.get("auto_abort") == "1")
     store.save_config(cfg)
     return redirect(url_for("settings", msg="auto-abort=%s" % cfg["auto_abort"]))
+
+
+@app.route("/hotpot")
+@require_auth
+def hotpot():
+    """Adversarial deception layer: status, live hostile-recon feed, per-source
+    rollup, and the deployed honeytokens. Read-only view — arming is in Settings
+    (mirrored here as a toggle for convenience)."""
+    events = store.list_hotpot_events()
+    rollup = {}
+    for e in events:
+        src = e.get("src", "?")
+        r = rollup.setdefault(src, {"src": src, "events": 0, "creds": 0, "loot": 0,
+                                    "trips": 0, "probes": 0, "last": ""})
+        r["events"] += 1
+        t = e.get("type", "")
+        if   t == "cred_attempt": r["creds"] += 1
+        elif t == "loot_pull":    r["loot"] += 1
+        elif t == "token_trip":   r["trips"] += 1
+        elif t == "probe":        r["probes"] += 1
+        if e.get("ts", "") > r["last"]:
+            r["last"] = e.get("ts", "")
+    rollup = sorted(rollup.values(), key=lambda r: r["last"], reverse=True)
+    return render_template("hotpot.html", cfg=store.load_config(), st=ap_status(),
+                           events=events[:200], rollup=rollup,
+                           tokens=store.load_tokens(), backends=store.TOKEN_BACKENDS,
+                           hotpot_up=unit_active("ap-testbed-hotpot.service"),
+                           msg=request.args.get("msg", ""))
+
+
+@app.route("/settings/deception", methods=["POST"])
+@require_auth
+def settings_deception():
+    require_csrf()
+    cfg = store.load_config()
+    cfg["deception"] = (request.form.get("deception") == "1")
+    store.save_config(cfg)
+    if unit_active("ap-testbed-hostapd.service"):
+        hotpot_restart()
+        note = " & applied (AP up)"
+    else:
+        note = " (starts on next dongle plug)"
+    return redirect(url_for("hotpot", msg="deception=%s%s" % (cfg["deception"], note)))
+
+
+@app.route("/settings/token_backend", methods=["POST"])
+@require_auth
+def settings_token_backend():
+    require_csrf()
+    b = (request.form.get("token_backend", "") or "").strip()
+    if b not in store.TOKEN_BACKENDS:
+        return redirect(url_for("hotpot", msg="invalid token backend"))
+    cfg = store.load_config(); cfg["token_backend"] = b; store.save_config(cfg)
+    return redirect(url_for("hotpot", msg="token backend = %s — re-seed to apply "
+                            "(hotpot/seed-tokens.py, or /hotpot-maintain rotate)" % b))
 
 
 @app.route("/settings/halt", methods=["POST"])

@@ -17,13 +17,18 @@ SCANS = os.path.join(STATE, "scans")
 CONSENT_LEDGER = os.path.join(LOGS, "allowlist.jsonl")
 HALT = os.path.join(LOGS, "HALT")
 ENGAGEMENTS = os.path.expanduser("~/engagements")
+# Hot-pot (adversarial deception layer) — see Adversarial-Honeypot-Hotpot.md.
+HOTPOT_EVENTS = os.path.join(LOGS, "hotpot", "events.jsonl")   # SMB/fake-admin/collector trips
+HOTPOT_TOKENS = os.path.join(STATE, "hotpot-tokens.json")      # deployed honeytoken registry
+TOKEN_BACKENDS = ("local", "canarytokens")
 
 MAC_RE  = re.compile(r'^[0-9a-f]{2}(:[0-9a-f]{2}){5}$')
 SSID_RE = re.compile(r'^[A-Za-z0-9 ._-]{1,32}$')
 SID_RE  = re.compile(r'^[0-9]+-[0-9a-f]{12}$')
 
 DEFAULT_CONFIG = {"ssid": "Open Security Test", "channel": 36, "country": "US",
-                  "armed": True, "egress": False, "auto_abort": False}
+                  "armed": True, "egress": False, "auto_abort": False,
+                  "deception": False, "token_backend": "local"}
 
 
 def _atomic_write(path, data):
@@ -60,6 +65,53 @@ def is_armed():
 
 def is_egress():     return bool(load_config().get("egress", False))
 def is_auto_abort(): return bool(load_config().get("auto_abort", False))
+def is_deception():  return bool(load_config().get("deception", False))
+def token_backend():
+    b = load_config().get("token_backend", "local")
+    return b if b in TOKEN_BACKENDS else "local"
+
+
+# ---- hot-pot: honeytoken registry + hostile-recon event feed ---------------
+def load_tokens():
+    """Deployed honeytokens: [{id, file, backend, beacon, minted, tripped}]."""
+    try:
+        d = json.load(open(HOTPOT_TOKENS))
+        return d if isinstance(d, list) else []
+    except Exception:
+        return []
+
+def save_tokens(t):
+    _atomic_write(HOTPOT_TOKENS, json.dumps(t, indent=2))
+
+def log_hotpot_event(rec):
+    """Append one hostile-recon event (smb/fake-admin/token trip). Best-effort."""
+    try:
+        os.makedirs(os.path.dirname(HOTPOT_EVENTS), exist_ok=True)
+        rec = dict(rec); rec.setdefault("ts", time.strftime("%Y-%m-%dT%H:%M:%S"))
+        with open(HOTPOT_EVENTS, "a") as f:
+            f.write(json.dumps(rec) + "\n")
+    except Exception:
+        pass
+
+def list_hotpot_events(limit=300):
+    out = []
+    try:
+        for line in open(HOTPOT_EVENTS):
+            line = line.strip()
+            if line:
+                try: out.append(json.loads(line))
+                except Exception: pass
+    except FileNotFoundError:
+        pass
+    return out[-limit:][::-1]
+
+def mark_token_tripped(tid):
+    toks = load_tokens(); hit = False
+    for t in toks:
+        if t.get("id") == tid:
+            t["tripped"] = time.strftime("%Y-%m-%dT%H:%M:%S"); hit = True
+    if hit: save_tokens(toks)
+    return hit
 
 # ---- authorization state (allowlist ∪ this-session consents) ----------------
 SESSION_AUTH = os.path.join(STATE, "session-auth")   # MACs consented this boot
@@ -305,6 +357,10 @@ if __name__ == "__main__":
     elif cmd == "is-armed":    sys.exit(0 if is_armed() else 1)
     elif cmd == "is-egress":     sys.exit(0 if is_egress() else 1)
     elif cmd == "is-auto-abort": sys.exit(0 if is_auto_abort() else 1)
+    elif cmd == "is-deception":  sys.exit(0 if is_deception() else 1)
+    elif cmd == "token-backend": print(token_backend())
+    elif cmd == "log-hotpot":    log_hotpot_event(json.loads(a[1]))
+    elif cmd == "trip-token":    sys.exit(0 if mark_token_tripped(a[1]) else 1)
     elif cmd == "is-authorized": sys.exit(0 if is_authorized(a[1]) else 1)
     elif cmd == "add-session-auth": sys.exit(0 if add_session_auth(a[1]) else 1)
     elif cmd == "list-allowed-macs":

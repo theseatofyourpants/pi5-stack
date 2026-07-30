@@ -1,0 +1,16 @@
+# Cowrie credential database — which logins the fake shell ACCEPTS.
+# Deliberately weak/guessable so an enumerator gets "in" and we capture what they
+# do next. Format: username:x:password  ('*' = any, '!' = deny). Nothing here is
+# a real credential for anything.
+root:x:root
+root:x:toor
+root:x:admin
+root:x:password
+root:x:123456
+admin:x:admin
+admin:x:password
+admin:x:1234
+pi:x:raspberry
+user:x:user
+# accept most other guesses too, so we keep capturing rather than locking them out
+*:x:*

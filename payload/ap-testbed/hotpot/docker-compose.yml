@@ -1,0 +1,71 @@
+# Hot-pot — adversarial deception layer for the AP testbed.
+# Every service is FAKE and instrumented. Published ports are pinned to the AP
+# gateway IP (10.66.66.1) so nothing is exposed on wlan0/the LAN. The bridge has a
+# fixed subnet (172.31.66.0/24) so hotpot-ctl.sh can firewall container egress to
+# exactly the isolation invariant: containers may answer probers, never initiate
+# outbound (no internet, no LAN, no exfil, no attacker-URL fetch).
+#
+# See ~/pi_design/Adversarial-Honeypot-Hotpot.md. This layer NEVER serves a payload
+# that runs on the prober — it observes and attributes only.
+name: ap-hotpot
+
+networks:
+  hotpot:
+    name: ap-hotpot
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.66.0/24
+
+services:
+  cowrie:                         # medium-interaction SSH + Telnet honeypot
+    image: cowrie/cowrie:latest
+    container_name: ap-hotpot-cowrie
+    restart: unless-stopped
+    networks: [hotpot]
+    # Host port 22 is ideal (authentic), but the Pi's real sshd usually holds the
+    # 0.0.0.0:22 wildcard, which blocks a 10.66.66.1:22 publish. hotpot-ctl.sh
+    # detects that and sets COWRIE_SSH_PORT=2222 as a graceful fallback. To serve
+    # the bait on a true :22, free it first (see docs: sshd ListenAddress or
+    # docker userland-proxy=false) and leave COWRIE_SSH_PORT unset.
+    ports:
+      - "10.66.66.1:${COWRIE_SSH_PORT:-22}:2222"
+      - "10.66.66.1:${COWRIE_TELNET_PORT:-23}:2223"
+    volumes:
+      - ./cowrie/etc/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
+      - ./cowrie/etc/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro
+      - ../logs/cowrie:/cowrie/cowrie-git/var/log/cowrie
+
+  smb:                            # read-only "open" SMB share seeded with honeytokens
+    build: ./smb
+    image: ap-hotpot/smb:local
+    container_name: ap-hotpot-smb
+    restart: unless-stopped
+    networks: [hotpot]
+    ports:
+      - "10.66.66.1:445:445"
+    volumes:
+      - ./smb/share:/share:ro
+
+  fake-admin:                     # fake router/NAS login + "config backup" honeytoken
+    build: ./fake-admin
+    image: ap-hotpot/fake-admin:local
+    container_name: ap-hotpot-fake-admin
+    restart: unless-stopped
+    networks: [hotpot]
+    ports:
+      - "10.66.66.1:8080:8080"
+    volumes:
+      - ../logs/hotpot:/logs
+      - ./tokens:/tokens:ro
+
+  collector:                      # local honeytoken beacon endpoint (in-situ trips)
+    build: ./collector
+    image: ap-hotpot/collector:local
+    container_name: ap-hotpot-collector
+    restart: unless-stopped
+    networks: [hotpot]
+    ports:
+      - "10.66.66.1:8686:8686"
+    volumes:
+      - ../logs/hotpot:/logs

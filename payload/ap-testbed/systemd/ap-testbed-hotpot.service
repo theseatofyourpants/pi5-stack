@@ -1,0 +1,17 @@
+[Unit]
+Description=AP Testbed — hot-pot (adversarial deception layer: Cowrie/SMB/fake-admin + honeytokens)
+PartOf=ap-testbed.target
+Requires=ap-testbed-net.service
+After=ap-testbed-net.service docker.service
+BindsTo=ap-testbed-net.service
+# Only actually listens when config.deception is ON — hotpot-ctl.sh self-gates.
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/tsoyp/ap-testbed/hotpot/hotpot-ctl.sh start
+ExecStop=/home/tsoyp/ap-testbed/hotpot/hotpot-ctl.sh stop
+TimeoutStartSec=300
+
+[Install]
+WantedBy=ap-testbed.target

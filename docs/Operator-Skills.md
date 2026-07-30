@@ -39,8 +39,9 @@ Every skill uses **Opus 5 as orchestrator** + **Haiku 4.5 subagents** for data-h
 | Skill | Role | Output |
 |-------|------|--------|
 | [[device-assess]] | **Unattended** scope-locked network+device assessment of one connected device; drives the [[Autonomous-AP-Testbed]] | `~/engagements/auto-{mac}-{ts}.md` |
+| [[hotpot-maintain]] | Keeper/monitor for the [[Adversarial-Honeypot-Hotpot]] deception layer — health, isolation assertion, honeytoken rotation, hostile-recon intel rollup. Read/rotate/report only, no offensive tools | `~/engagements/hotpot-{ts}.md` |
 
-Unlike the lifecycle skills, `/device-assess` runs headless (no operator gates) — launched by the testbed's `trigger-scan.sh`, not by hand.
+Unlike the lifecycle skills, `/device-assess` runs headless (no operator gates) — launched by the testbed's `trigger-scan.sh`, not by hand. `/hotpot-maintain` is operator-run and deliberately has **no** attack tooling — it observes and attributes, it never touches the prober.
 
 ## The red → blue loop
 Skills 1–5 are offensive; 6–8 turn that activity into detections and a client report. [[triage-alerts]] and [[detection-engineer]] both read the [[Network-Sensors|Suricata/Zeek]] logs, [[triage-alerts]] now adds [[mcp-greynoise|GreyNoise]] noise-vs-targeted context, and [[debrief]] folds the [[Detection-Library]] coverage into the final report. [[web-assess]] closed the exploitation gap that used to sit between recon and post-ex. This loop is the whole point of the build — see [[Architecture-Overview]].
