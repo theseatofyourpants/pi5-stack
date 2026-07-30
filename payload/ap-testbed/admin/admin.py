@@ -209,22 +209,32 @@ def _timeline(events, hours=24, buckets=24):
 
 
 def _sensor_status():
-    """Best-effort Suricata alert feed. Graceful if the log isn't readable as the
-    admin user (the common case) — surfaces the one-line fix instead of failing."""
-    path = "/var/log/suricata/eve.json"
+    """Best-effort Suricata alert feed. Checks the host-wide log and the hot-pot's
+    own IDS log (hotpot-ctl.sh runs a dedicated Suricata on the AP interface).
+    Graceful if the log isn't readable/present — surfaces the one-line fix."""
+    candidates = ["/var/log/suricata/eve.json", "/var/log/suricata/hotpot/eve.json"]
     out = {"available": False, "alert_count": 0, "alerts": [], "note": ""}
-    try:
-        with open(path) as f:
-            lines = f.readlines()[-3000:]
-    except PermissionError:
-        out["note"] = ("suricata eve.json not readable by this user — run:  "
-                       "sudo setfacl -m u:tsoyp:r /var/log/suricata/eve.json")
-        return out
-    except FileNotFoundError:
-        out["note"] = "suricata eve.json not found — sensor may be down (see /stack-status)"
-        return out
-    except Exception as ex:
-        out["note"] = "sensor read error: %s" % ex
+    lines = None
+    existed_unreadable = None
+    for path in candidates:
+        try:
+            with open(path) as f:
+                lines = f.readlines()[-3000:]
+            break
+        except PermissionError:
+            existed_unreadable = path
+        except FileNotFoundError:
+            pass
+        except Exception as ex:
+            out["note"] = "sensor read error: %s" % ex
+            return out
+    if lines is None:
+        if existed_unreadable:
+            out["note"] = ("suricata log not readable by this user — run:  "
+                           "sudo setfacl -m u:tsoyp:r %s" % existed_unreadable)
+        else:
+            out["note"] = ("suricata eve.json not found — sensor down (arm the hot-pot to "
+                           "start IDS on the AP, or see /stack-status)")
         return out
     recent = []
     for ln in lines:

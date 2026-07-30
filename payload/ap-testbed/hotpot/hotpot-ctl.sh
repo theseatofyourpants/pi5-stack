@@ -18,6 +18,11 @@ COMPOSE="$HOTPOT/docker-compose.yml"
 AP_IP=10.66.66.1
 NET=172.31.66.0/24           # hot-pot bridge subnet (docker-compose.yml)
 LOGS="$BASE/logs"
+IFACE=wlan1                  # AP interface the bait lives on
+# Dedicated Suricata instance for the hot-pot: its own pidfile + log dir so it
+# never collides with a host-wide Suricata. The dashboard reads this eve.json.
+SURI_PID=/var/run/suricata/suricata-hotpot.pid
+SURI_LOG=/var/log/suricata/hotpot
 
 log() { echo "[hotpot-ctl] $*"; }
 
@@ -39,6 +44,42 @@ remove_egress_block() {
 }
 
 compose() { docker compose --project-directory "$HOTPOT" -f "$COMPOSE" "$@"; }
+
+start_ids() {
+  # IDS on the AP interface so prober->bait traffic is alerted on (honeypot = zero
+  # legit traffic = ~zero-false-positive). Best-effort: never blocks the bait stack.
+  command -v suricata >/dev/null 2>&1 || { log "suricata not installed — skipping hot-pot IDS"; return 0; }
+  if [ -f "$SURI_PID" ] && kill -0 "$(cat "$SURI_PID" 2>/dev/null)" 2>/dev/null; then
+    log "hot-pot IDS already running (pid $(cat "$SURI_PID"))"; return 0
+  fi
+  if pgrep -af suricata 2>/dev/null | grep -q -- "-i $IFACE"; then
+    log "a suricata is already watching $IFACE — leaving it in place (dashboard reads its eve.json)"; return 0
+  fi
+  mkdir -p "$SURI_LOG" /var/run/suricata
+  log "starting hot-pot IDS: suricata -i $IFACE -> $SURI_LOG/eve.json"
+  if ! suricata -c /etc/suricata/suricata.yaml -i "$IFACE" -l "$SURI_LOG" \
+        -D --pidfile "$SURI_PID" >/dev/null 2>&1; then
+    log "suricata start FAILED — continuing without IDS (check: suricata -c … -i $IFACE)"; return 0
+  fi
+  for _ in 1 2 3 4 5 6; do [ -f "$SURI_LOG/eve.json" ] && break; sleep 1; done
+  # grant the admin console (tsoyp) read now + inherit on log rotation
+  setfacl -m u:tsoyp:rx "$SURI_LOG" 2>/dev/null || true
+  setfacl -d -m u:tsoyp:r "$SURI_LOG" 2>/dev/null || true
+  setfacl -m u:tsoyp:r "$SURI_LOG/eve.json" 2>/dev/null || true
+  log "hot-pot IDS up on $IFACE (tsoyp granted read; dashboard Alerts panel will populate)"
+}
+
+stop_ids() {
+  [ -f "$SURI_PID" ] || return 0
+  local p; p="$(cat "$SURI_PID" 2>/dev/null)"
+  if [ -n "$p" ] && kill -0 "$p" 2>/dev/null; then
+    log "stopping hot-pot IDS (pid $p)"
+    kill "$p" 2>/dev/null
+    for _ in 1 2 3; do kill -0 "$p" 2>/dev/null || break; sleep 1; done
+    kill -9 "$p" 2>/dev/null || true
+  fi
+  rm -f "$SURI_PID"
+}
 
 start() {
   if ! python3 "$BASE/lib/store.py" is-deception; then
@@ -62,10 +103,12 @@ start() {
   log "bringing the deception stack up (build on first run may pull images)…"
   compose up -d --build || { log "compose up FAILED"; exit 1; }
   apply_egress_block
+  start_ids
   log "hot-pot UP. bait: 22/23 (cowrie) 445 (smb) 8080 (fake-admin) · collector 8686 — all on $AP_IP only."
 }
 
 stop() {
+  stop_ids
   remove_egress_block
   log "tearing the deception stack down…"
   compose down 2>/dev/null || true
@@ -76,6 +119,12 @@ status() {
   echo "== deception flag =="; python3 "$BASE/lib/store.py" is-deception && echo "ON" || echo "OFF"
   echo "== compose ps =="; compose ps 2>/dev/null
   echo "== egress-block (DOCKER-USER) =="; iptables -S DOCKER-USER 2>/dev/null | grep "$NET" || echo "(none)"
+  echo "== hot-pot IDS =="
+  if [ -f "$SURI_PID" ] && kill -0 "$(cat "$SURI_PID" 2>/dev/null)" 2>/dev/null; then
+    echo "suricata on $IFACE (pid $(cat "$SURI_PID")) -> $SURI_LOG/eve.json"
+  else
+    pgrep -af suricata 2>/dev/null | grep -- "-i $IFACE" || echo "(not running)"
+  fi
 }
 
 case "${1:-}" in

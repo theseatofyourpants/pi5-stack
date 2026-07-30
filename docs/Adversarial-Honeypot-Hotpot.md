@@ -152,7 +152,13 @@ pays off:
 
 - **[[Network-Sensors|Suricata]]** — custom rules: *any* connection to the
   honeypot IP/bait ports is an alert. A honeypot sees zero legitimate traffic, so
-  these are ~zero-false-positive, high-fidelity signals.
+  these are ~zero-false-positive, high-fidelity signals. **Wired into the lifecycle:**
+  `hotpot-ctl.sh` starts a **dedicated** Suricata on the AP interface (`wlan1`) when
+  the hot-pot arms — its own pidfile (`suricata-hotpot.pid`) + log dir
+  (`/var/log/suricata/hotpot/`) so it never collides with a host-wide Suricata — and
+  auto-grants the admin user read (`setfacl`) so the dashboard Alerts panel populates.
+  It defers to any Suricata already watching `wlan1`, and tears down on disarm/unplug.
+  The dashboard reads whichever log is present (host-wide or hot-pot).
 - **[[Network-Sensors|Zeek]]** — `conn`/`ssh`/`http`/`x509` logs on the AP subnet
   give rich attribution metadata and **JA3/JA4/HASSH** client fingerprints of the
   prober's tooling.
