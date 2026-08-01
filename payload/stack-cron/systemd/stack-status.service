@@ -1,0 +1,12 @@
+[Unit]
+Description=Scheduled stack-status health board (headless claude agent)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tsoyp
+Group=tsoyp
+Environment=HOME=/home/tsoyp
+ExecStart=/home/tsoyp/stack-cron/run-agent.sh stack-status 420 "Run the full health board: C2 backends (Sliver, Mythic), network sensors, and every MCP backing service. Report anything DOWN with the exact restart command."
+TimeoutStartSec=600

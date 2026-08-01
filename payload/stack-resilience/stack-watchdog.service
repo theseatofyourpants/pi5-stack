@@ -1,0 +1,10 @@
+[Unit]
+Description=Stack backend watchdog (Sliver + Mythic liveness / self-heal)
+After=network-online.target docker.service sliver.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/tsoyp/stack-resilience/stack-watchdog.sh
+# root: needs systemctl restart on sliver.service + docker control
+User=root

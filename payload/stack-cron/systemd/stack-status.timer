@@ -1,0 +1,11 @@
+[Unit]
+Description=Run stack-status ~3min after boot and daily at 09:00
+
+[Timer]
+OnBootSec=3min
+OnCalendar=*-*-* 09:00:00
+Persistent=true
+Unit=stack-status.service
+
+[Install]
+WantedBy=timers.target

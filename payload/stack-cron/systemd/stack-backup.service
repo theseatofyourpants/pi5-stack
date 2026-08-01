@@ -1,0 +1,10 @@
+[Unit]
+Description=Scheduled Pi 5 stack data backup (deterministic, redacted, local)
+
+[Service]
+Type=oneshot
+User=tsoyp
+Group=tsoyp
+Environment=HOME=/home/tsoyp
+ExecStart=/home/tsoyp/stack-cron/backup.sh
+TimeoutStartSec=600

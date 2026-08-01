@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Pi 5 stack backup at 03:00
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=stack-backup.service
+
+[Install]
+WantedBy=timers.target

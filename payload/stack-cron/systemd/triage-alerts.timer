@@ -1,0 +1,11 @@
+[Unit]
+Description=Run triage-alerts every 6 hours
+
+[Timer]
+# Every 6h. Not Persistent: a missed window is stale — don't backfill old triage.
+OnCalendar=*-*-* 00,06,12,18:00:00
+Persistent=false
+Unit=triage-alerts.service
+
+[Install]
+WantedBy=timers.target

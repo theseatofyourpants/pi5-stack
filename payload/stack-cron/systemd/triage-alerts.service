@@ -1,0 +1,12 @@
+[Unit]
+Description=Scheduled triage-alerts run (headless claude agent)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tsoyp
+Group=tsoyp
+Environment=HOME=/home/tsoyp
+ExecStart=/home/tsoyp/stack-cron/run-agent.sh triage-alerts 900 "Pull the current Huntress alert feed, correlate against active Mythic callbacks, Sliver beacons, and the Suricata/Zeek sensors, classify each alert (true-positive / likely-TP / noise), and write a response runbook for anything actionable."
+TimeoutStartSec=1200
