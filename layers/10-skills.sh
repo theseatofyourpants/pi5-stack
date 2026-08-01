@@ -5,10 +5,17 @@
 set -euo pipefail
 source "$STACK_ROOT/lib/common.sh"
 
-# 1. operator skills
+# 1. operator agents (autonomous, /operation-chainable)
 mkdir -p "$HOME/.claude/agents"
 cp "$STACK_ROOT"/payload/agents/*.md "$HOME/.claude/agents/"
-ok "installed $(ls "$STACK_ROOT"/payload/agents/*.md | wc -l) operator skills -> ~/.claude/agents"
+ok "installed $(ls "$STACK_ROOT"/payload/agents/*.md | wc -l) operator agents -> ~/.claude/agents"
+
+# 1b. operator skills (inline SKILL.md runbooks) — each is a <name>/SKILL.md dir
+if [ -d "$STACK_ROOT/payload/skills" ]; then
+  mkdir -p "$HOME/.claude/skills"
+  cp -r "$STACK_ROOT"/payload/skills/* "$HOME/.claude/skills/"
+  ok "installed $(ls -d "$STACK_ROOT"/payload/skills/*/ | wc -l) operator skills -> ~/.claude/skills"
+fi
 
 # 2. secrets for MCP rendering (prompt if missing)
 require_secret VT_API_KEY        "VirusTotal API key (virustotal MCP; blank = it won't auth)"
@@ -47,6 +54,7 @@ stop_for_manual "Claude Code login" \
   "    claude        (then use /login)" \
   "Skip if you're already logged in."
 
-verify "device-assess skill present" test -f "$HOME/.claude/agents/device-assess.md"
+verify "device-assess agent present" test -f "$HOME/.claude/agents/device-assess.md"
+verify "mcp-doctor skill present" test -f "$HOME/.claude/skills/mcp-doctor/SKILL.md"
 verify "mcpServers in config" python3 -c "import json;assert json.load(open('$HOME/.claude.json'))['mcpServers']"
 ok "10-skills done"
