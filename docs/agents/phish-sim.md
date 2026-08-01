@@ -21,7 +21,7 @@ Run an **authorized red-team phishing / social-engineering simulation**: design 
 
 ## Flow
 1. **Pretext & lure** — `pentest-ai test_social_engineering` structures the approved scenario.
-2. **Payload & listener** — delegates to [[generate-payload]] (OPSEC-aware implant) and stands up a [[Sliver-Server|Sliver]]/[[Mythic-Server|Mythic]] callback listener; or a tracked awareness landing page for awareness-only objectives.
+2. **Delivery mechanism** — one of three per objective (see [[Phishing-Infra]]): (A) implant via [[generate-payload]] + [[Sliver-Server|Sliver]]/[[Mythic-Server|Mythic]] listener; (B) **gophish** campaign (click/cred metrics + landing pages); (C) **evilginx** AiTM (live session/MFA-cookie capture — the sensitive one, absolute scope gate).
 3. **Delivery** — operator-gated, sanctioned infra only.
 4. **Track & hand off** — landed callback = foothold → [[Post-Exploitation]] loop. Metrics + IOCs → [[detection-engineer]] for email/link detections.
 
@@ -29,4 +29,4 @@ Run an **authorized red-team phishing / social-engineering simulation**: design 
 Wired into [[operation]] as **Phase 4b** (parallel to [[web-assess]] as an initial-access route). It's ultimately a defensive exercise — the output includes the awareness/training takeaways, not just the compromise.
 
 ## Related
-- [[operation]] · [[generate-payload]] · [[Post-Exploitation]] · [[Blue-Team-Tools|phish-analyze]] (the defensive counterpart)
+- [[Phishing-Infra]] (gophish + evilginx setup) · [[operation]] · [[generate-payload]] · [[Post-Exploitation]] · [[Blue-Team-Tools|phish-analyze]] (the defensive counterpart)

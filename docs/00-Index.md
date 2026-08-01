@@ -86,6 +86,7 @@ Custom `~/.claude/agents/*.md` orchestrators. Index: [[Operator-Skills]]
 - [[wifi-failsafe]] — fallback AP + captive portal on wlan0 when the Pi loses Wi-Fi
 - [[Eink-Panel]] — Pi Zero 2 W + 2.13" e-ink companion: glanceable hardware status board (polls the admin console's /api/panel)
 - [[Scheduled-Jobs]] — stack-cron systemd timers: boot/daily [[stack-status]], 6-hourly [[triage-alerts]], nightly redacted backup
+- [[Phishing-Infra]] — gophish (campaigns) + evilginx (AiTM session/MFA-cookie capture); per-engagement infra behind [[phish-sim]]
 
 ## 🔑 Fast facts
 
