@@ -2,7 +2,7 @@
 title: Sliver C2 Server
 tags: [infrastructure, c2, sliver]
 version: "1.7.3"
-updated: 2026-07-27
+updated: 2026-08-01
 ---
 
 # Sliver C2 Server
@@ -18,10 +18,11 @@ Sliver v1.7.3 (BishopFox) C2 framework, arm64. Runs as a multiplayer daemon so t
 - Listens: `127.0.0.1:31337` (multiplayer gRPC/mTLS)
 
 ## Start
+Now a **systemd unit** — no manual start needed:
 ```bash
-nohup ~/.local/bin/sliver-server daemon > /tmp/sliver-server.log 2>&1 &
+sudo systemctl status sliver.service     # User=tsoyp, enabled, listens :31337
 ```
-**Does not survive reboot** — restart manually (see [[Reboot-Runbook]]).
+**Reboot-resilient as of 2026-08-01** (`~/stack-resilience/install.sh`): `sliver.service` (Restart=on-failure, enabled) + `stack-watchdog.timer` (heals every ~3 min, writes `~/ap-testbed/state/backends.json` for the [[Eink-Panel]]/dashboard). The old `nohup ~/.local/bin/sliver-server daemon &` is retired — see [[Reboot-Runbook]].
 
 ## Health check
 ```bash

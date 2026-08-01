@@ -4,7 +4,7 @@ tags: [skill, agent, orchestrator, master, lifecycle]
 skill_name: operation
 model: claude-opus-5
 file: ~/.claude/agents/operation.md
-updated: 2026-07-27
+updated: 2026-08-01
 ---
 
 # /operation
@@ -25,11 +25,14 @@ Via the Agent tool, by `subagent_type`. Each specialist is passed the context it
 | 2 Setup | [[engagement-start]] | — |
 | 3 Recon | [[osint-profile]] | which targets go active? |
 | 4 Web assess | [[web-assess]] | foothold → weaponize now? |
+| 4b Initial access | [[phish-sim]] | phish type; operator go/no-go on delivery |
 | 5 Weaponize | [[generate-payload]] | — (OPSEC gate inside skill) |
-| 6 Post-ex | [[pivot-analysis]] | confirm before creating listeners |
-| 7 Blue loop | [[triage-alerts]] → [[detection-engineer]] | optional interval re-run |
+| 6 Post-ex **loop** | [[Post-Exploitation]]: pivot-analysis → priv-esc → loot → ad-attack → lateral-move | per sub-step (destructive LPE, sensitive data, spray policy, each hop/listener) |
+| 7 Blue loop | [[triage-alerts]] → [[Blue-Team-Tools\|threat-hunt]] → [[detection-engineer]] | optional interval re-run |
 | 8 Debrief | [[debrief]] | — |
 | 9 Backup | [[engagement-backup]] | confirm before any remote push |
+
+**Phase 6 is now a gated loop, not a single step** (2026-08-01): map → escalate → collect → AD branch → spread, repeating per foothold until objectives met / scope exhausted. Assumed-breach engagements *start* at Phase 6; the `phish` type enters via Phase 4b. See [[Post-Exploitation]].
 
 ## Subset / resume
 Runs any subset in order (always preflight first, always offer backup last). Resumes a partway engagement by reading existing `~/engagements/{op}-*` artifacts.

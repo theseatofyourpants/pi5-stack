@@ -2,7 +2,7 @@
 title: Pi 5 Red/Blue Team Stack — Map of Content
 tags: [moc, index, pi5, redteam, blueteam]
 platform: "Raspberry Pi 5 / Kali Rolling / arm64"
-updated: 2026-07-27
+updated: 2026-08-01
 ---
 
 # 🍓 Pi 5 Red/Blue Team Stack — Map of Content
@@ -28,7 +28,7 @@ The tool surface Claude Code can call. Index: [[MCP-Servers]]
 | Mythic C2 | Offensive C2 backend | [[mcp-mythic]] |
 | Caido | Web proxy / intercept | [[mcp-caido]] |
 | VirusTotal | IOC / malware enrichment | [[mcp-virustotal]] |
-| GreyNoise | IP intent — noise vs targeted (custom, keyless) | [[mcp-greynoise]] |
+| GreyNoise | IP intent — noise vs targeted (custom, v3, keyed) | [[mcp-greynoise]] |
 | Huntress | Blue-team EDR alert feed | [[mcp-huntress]] |
 | hexstrike | 150+ offensive tool wrappers | [[mcp-hexstrike]] |
 | MCP-Kali-Server | Kali tool + shell/SSH runner | [[mcp-kali-server]] |
@@ -56,6 +56,17 @@ Custom `~/.claude/agents/*.md` orchestrators. Index: [[Operator-Skills]]
 | `/device-assess` | Unattended device scan (testbed) | [[device-assess]] |
 | `/hotpot-maintain` | Deception-layer keeper (testbed) | [[hotpot-maintain]] |
 
+### 🔴🔵 Capability expansion (2026-08-01)
+19 new skills/agents — split into `~/.claude/agents/` (autonomous, chainable by `/operation`) and `~/.claude/skills/` (inline runbooks). Grouped notes:
+
+| Area | Note | Covers |
+|------|------|--------|
+| Red — post-ex | [[Post-Exploitation]] | ad-attack · priv-esc · loot · lateral-move (the Phase 6 loop) |
+| Red — initial access | [[phish-sim]] | authorized phishing/SE (Phase 4b front door) |
+| Blue | [[Blue-Team-Tools]] | threat-hunt · phish-analyze · ioc-enrich · sensor-tune |
+| CTF | [[CTF-Toolkit]] | ctf-triage/pwn/rev/forensics · nudge |
+| Ops / meta | [[Stack-Ops-Skills]] | mcp-doctor · add-mcp · stack-restore · vault-sync · pi5-stack-sync |
+
 ## 🏗️ Infrastructure
 
 - [[C2-Primer]] — **how Sliver & Mythic actually work** (session vs beacon, listeners, agents, pivoting) — start here if C2 is new
@@ -67,11 +78,12 @@ Custom `~/.claude/agents/*.md` orchestrators. Index: [[Operator-Skills]]
 - [[Adversarial-Honeypot-Hotpot]] — deception layer on the same AP: fake bait services + honeytokens that observe & attribute unbidden probers (no compromise of the prober)
 - [[wifi-failsafe]] — fallback AP + captive portal on wlan0 when the Pi loses Wi-Fi
 - [[Eink-Panel]] — Pi Zero 2 W + 2.13" e-ink companion: glanceable hardware status board (polls the admin console's /api/panel)
+- [[Scheduled-Jobs]] — stack-cron systemd timers: boot/daily [[stack-status]], 6-hourly [[triage-alerts]], nightly redacted backup
 
 ## 🔑 Fast facts
 
 - **Host:** Raspberry Pi 5, arm64, Kali Rolling, no passwordless sudo (privileged cmds run via `! ` prefix in the terminal)
 - **MCP config:** global `~/.claude.json` → `mcpServers`
-- **Skills:** `~/.claude/agents/`
+- **Skills:** agents in `~/.claude/agents/` (autonomous, `/operation`-chainable); inline runbooks in `~/.claude/skills/` (populated 2026-08-01 — see [[Stack-Ops-Skills]])
 - **Engagement output:** `~/engagements/`
 - **Orchestration model:** Opus 5 reasons, Haiku 4.5 subagents fetch data — see [[Architecture-Overview]]

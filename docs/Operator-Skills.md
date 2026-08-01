@@ -1,7 +1,7 @@
 ---
 title: Operator Skills Index
 tags: [moc, skills, agents]
-updated: 2026-07-27
+updated: 2026-08-01
 ---
 
 # Operator Skills Index
@@ -43,5 +43,19 @@ Every skill uses **Opus 5 as orchestrator** + **Haiku 4.5 subagents** for data-h
 
 Unlike the lifecycle skills, `/device-assess` runs headless (no operator gates) — launched by the testbed's `trigger-scan.sh`, not by hand. `/hotpot-maintain` is operator-run and deliberately has **no** attack tooling — it observes and attributes, it never touches the prober.
 
+## 2026-08-01 capability expansion (19 new)
+
+Split by mechanism: **agents** (`~/.claude/agents/`, autonomous, `/operation`-chainable) vs **skills** (`~/.claude/skills/`, inline runbooks loaded into the current session). Grouped notes:
+
+| Area | Note | Covers |
+|------|------|--------|
+| Red — post-ex loop | [[Post-Exploitation]] | `ad-attack` · `priv-esc` · `loot` · `lateral-move` |
+| Red — initial access | [[phish-sim]] | authorized phishing/SE — [[operation\|Phase 4b]] |
+| Blue | [[Blue-Team-Tools]] | `threat-hunt` · `phish-analyze` · `ioc-enrich` · `sensor-tune` |
+| CTF | [[CTF-Toolkit]] | `ctf-triage/pwn/rev/forensics` · `nudge` |
+| Ops / meta | [[Stack-Ops-Skills]] | `mcp-doctor` · `add-mcp` · `stack-restore` · `vault-sync` · `pi5-stack-sync` |
+
+These extended [[operation]] into a full end-to-end kill chain: recon → [[web-assess]]/[[phish-sim]] → [[generate-payload]] → the [[Post-Exploitation]] loop → blue → [[debrief]].
+
 ## The red → blue loop
-Skills 1–5 are offensive; 6–8 turn that activity into detections and a client report. [[triage-alerts]] and [[detection-engineer]] both read the [[Network-Sensors|Suricata/Zeek]] logs, [[triage-alerts]] now adds [[mcp-greynoise|GreyNoise]] noise-vs-targeted context, and [[debrief]] folds the [[Detection-Library]] coverage into the final report. [[web-assess]] closed the exploitation gap that used to sit between recon and post-ex. This loop is the whole point of the build — see [[Architecture-Overview]].
+Skills 1–5 are offensive (now with the full [[Post-Exploitation]] chain + [[phish-sim]] front door); 6–8 turn that activity into detections and a client report — and [[Blue-Team-Tools|threat-hunt]] actively hunts the TTPs the offensive phases ran. [[triage-alerts]] and [[detection-engineer]] both read the [[Network-Sensors|Suricata/Zeek]] logs, [[triage-alerts]] now adds [[mcp-greynoise|GreyNoise]] noise-vs-targeted context, and [[debrief]] folds the [[Detection-Library]] coverage into the final report. [[web-assess]] closed the exploitation gap that used to sit between recon and post-ex. This loop is the whole point of the build — see [[Architecture-Overview]].

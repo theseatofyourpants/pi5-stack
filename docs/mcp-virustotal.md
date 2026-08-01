@@ -3,7 +3,7 @@ title: VirusTotal MCP
 tags: [mcp, enrichment, blueteam, virustotal]
 tool_prefix: "mcp__virustotal__"
 transport: stdio
-updated: 2026-07-27
+updated: 2026-08-01
 ---
 
 # VirusTotal MCP
@@ -18,10 +18,12 @@ MCP wrapper for the VirusTotal API — reputation and behavior lookups for files
 "virustotal": {
   "command": "/usr/share/nodejs/corepack/shims/npx",
   "args": ["-y", "@burtthecoder/mcp-virustotal"],
-  "env": { "VT_API_KEY": "<key>" }
+  "env": { "VIRUSTOTAL_API_KEY": "<key>" }
 }
 ```
 - Source: `@burtthecoder/mcp-virustotal` (Node, via npx)
+> [!warning] Env-var name (fixed 2026-08-01)
+> The package reads **`VIRUSTOTAL_API_KEY`**, not `VT_API_KEY`. The config previously set the wrong name, so the server died on startup ("Failed to connect") with a valid key sitting right there. If VT ever shows "Failed to connect", check the env-var name first — see [[Stack-Ops-Skills|mcp-doctor]]. (npm is pinned via corepack to 11.19.0 on node 22 — a mismatched npm can also break npx servers.)
 - **Free tier limits: 500 lookups/day, 4/min** → skills batch calls and stay under 4/min.
 
 ## Tools (prefix `mcp__virustotal__`)
