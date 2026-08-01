@@ -12,6 +12,13 @@ The home base for the whole build. This vault maps the **AI-orchestrated C2 + de
 > [!info] How to read this vault
 > Start with [[Architecture-Overview]] for the big picture, then follow the wikilinks. Every MCP server and every skill has its own atomic note. The [[Replication-Guide]] rebuilds the whole thing from bare metal.
 
+> [!note] Folder layout (for browsing on GitHub — Obsidian resolves links by name, so folders are just for humans)
+> - **root** — the maps: this index + [[Architecture-Overview]], [[Operator-Skills]], [[MCP-Servers]], [[Replication-Guide]], [[Reboot-Runbook]]
+> - **`agents/`** — one note per autonomous operator agent (`~/.claude/agents/`)
+> - **`skills/`** — the red/blue/CTF/ops capability writeups (the 2026-08-01 expansion)
+> - **`mcp/`** — one note per MCP server
+> - **`infrastructure/`** — C2 servers, sensors, testbed, e-ink panel, scheduled jobs
+
 ## 🗺️ Core maps
 
 - [[Architecture-Overview]] — how everything fits together (the orchestration model, data flows, the layer cake)
