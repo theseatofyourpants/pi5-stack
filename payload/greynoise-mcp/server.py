@@ -92,7 +92,9 @@ def greynoise_context_ip(ip: str) -> dict:
     that need attribution."""
     if not API_KEY:
         return _need_key()
-    return _get(f"/v2/noise/context/{ip}", auth=True, fallback_ip=ip)
+    # v3 unified IP endpoint: internet_scanner_intelligence (noise) +
+    # business_service_intelligence (RIOT) in a single response.
+    return _get(f"/v3/ip/{ip}", auth=True, fallback_ip=ip)
 
 
 @mcp.tool()
@@ -102,7 +104,9 @@ def greynoise_riot_ip(ip: str) -> dict:
     an alerting IP as expected business traffic."""
     if not API_KEY:
         return _need_key()
-    return _get(f"/v2/riot/{ip}", auth=True, fallback_ip=ip)
+    # v3 folds RIOT/business-service data into the unified IP endpoint; read
+    # the business_service_intelligence block of the response.
+    return _get(f"/v3/ip/{ip}", auth=True, fallback_ip=ip)
 
 
 @mcp.tool()
@@ -111,7 +115,8 @@ def greynoise_quick_ip(ip: str) -> dict:
     Lightweight — use when batching many IPs and you only need noise=true/false."""
     if not API_KEY:
         return _need_key()
-    return _get(f"/v2/noise/quick/{ip}", auth=True, fallback_ip=ip)
+    return _get(f"/v3/ip/{ip}", auth=True, params={"quick": "true"},
+                fallback_ip=ip)
 
 
 @mcp.tool()
@@ -122,7 +127,7 @@ def greynoise_gnql(query: str, size: int = 20) -> dict:
     matching observed scanners. Use for hunting infra patterns during OSINT."""
     if not API_KEY:
         return _need_key()
-    return _get("/v2/experimental/gnql", auth=True,
+    return _get("/v3/gnql", auth=True,
                 params={"query": query, "size": size})
 
 
