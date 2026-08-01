@@ -25,6 +25,7 @@ __pycache__/
 venv/
 .venv/
 node_modules/
+*.log
 
 # --- hot-pot: ship Cowrie config (explicit exception to *.cfg) ---
 !payload/ap-testbed/hotpot/cowrie/etc/cowrie.cfg
