@@ -23,8 +23,11 @@ For a URL/webapp: note the stack (headers, cookies, JS) — that's `/web-assess`
 | ELF/PE, "find the key/flag", no remote | **rev** | `ctf-rev` | ghidra, radare2, angr |
 | Image/audio/pcap/memory dump/odd file | **forensics** | `ctf-forensics` | binwalk, volatility3, steghide, foremost |
 | URL / webapp | **web** | `/web-assess` | katana, ffuf, sqlmap, caido |
-| Ciphertext, keys, math, `.pem`, RSA params | **crypto** | (handle inline) | python + sympy/pycryptodome; look for small-e/reused-nonce/weak-modulus |
-| QR/esoteric/steg-in-text/"nudge" | **misc** | inline / `nudge` for pinball | strings, cyberchef-style transforms |
+| Ciphertext, keys, math, `.pem`, RSA params | **crypto** | `ctf-crypto` | classical chains, XOR/known-plaintext, small-e/reused-nonce/weak-modulus |
+| Firmware blob, flash dump, `.uf2`/`.bin`/`.z5`, badge repo | **firmware** | `fw-triage` | binwalk carve, id arch/format, route to rev/forensics |
+| Frequency / pager / SDR capture / audio-with-tones | **rf** | `rf-decode` | rtl_fm + multimon-ng (POCSAG/FLEX), sox reverse |
+| Physical badge/board in hand | **hardware** | `hw-bench` | UART/baud, flashrom dump, logic-analyzer, sensor triggers |
+| QR/esoteric/steg-in-text/"nudge" | **misc** | inline / `nudge` for pinball / `andxor-ctf` for badges | strings, cyberchef-style transforms |
 
 ## 3. Cheap wins to always check first
 - `strings | grep -iE 'flag|ctf|\{'` and the challenge's flag format.
