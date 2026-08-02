@@ -100,17 +100,38 @@ The physical tooling that recurs across AND!XOR / 5n4ck3y (and badge CTFs genera
 Tailored to the AND!XOR / 5n4ck3y challenge families above; tiered by value, mapping the current kit against the gaps.
 
 ### Current kit
-- **FreeWili2** — *picking up at DC34.* RP2350 + FPGA, Python-programmable hardware multitool: GPIO / UART / SPI / I2C bit-bang, IR, buttons + display, some sub-GHz RF. Covers much of the serial / IR / GPIO surface. ⚠ **Verify its final RF + logic-analyzer specs** — that decides whether the SDR / standalone analyzer below are still needed (assume not-wideband for now).
+- **FreeWili2** — *picking up at DC34.* 2× RP2350 + Lattice iCE40 FPGA + RPi CM0 (Linux) + STM32WLE5 LoRa. A genuine hardware-hacking beast — its coverage map (below) retires most of the buy list.
 - **Waveshare USB-to-TTL** — dedicated 3.3 V serial line. **Set the jumper to 3.3 V before touching a badge.** The reliable UART path when the FreeWili is busy; keep spare jumper leads.
 - **CH341A + SOIC8 clip kit** (ACEIRMC, [amazon B07V2M5MVH](https://www.amazon.com/dp/B07V2M5MVH)) — CH341A programmer + SOIC8/SOP8 test clip + **1.8 V adapter** + SOP8→DIP8 socket. Covers the whole **SPI-flash-dump** line in one box. ⚠ the classic CH341A drives ~5 V on its data pins even at 3.3 V VCC — fine for *reading* most 25-series 3.3 V flash; use the 1.8 V adapter for 1.8 V chips; consider the 3.3 V I/O mod for sensitive parts. `flashrom -p ch341a_spi -r dump.bin`.
 - **T-Deck w/ Meshtastic** ✅ owned — covers the LoRa/Meshtastic (915 MHz US) BBS/foxhunt family outright.
 - **Owned accessories** ✅ — IC-hook / grabber clips, Dupont jumpers (ordered), soldering kit, strong neodymium magnet.
 - **Software toolchain** — already installed on the Pi 5 stack (dfrotz / infodump / txd, ghidra, radare2, multimon-ng, steghide, sox, foremost, picocom, sigrok-cli, hashcat / john; pycryptodome as **`Cryptodome`**). Reproduced by the `55-ctf-tools` layer — see [[AND-XOR-5n4ck3y]] §8.
 
-### Tier 1 — remaining gap
-- **RTL-SDR (+ ~900 MHz whip antenna)** — the *only* Tier-1 item still open; needed for POCSAG/FLEX **pager** decode (the FreeWili's radio won't demod it, RX-only ~$35). Hard to get shipped in time → **buy at the con: [Hacker Warehouse](https://hackerwarehouse.com/product/rtlsdr/) booth (~$35, a confirmed DC34 vendor)**, hit the floor Thu/Fri before it sells out; bring cash. Backup: ship one to the Vegas hotel (Amazon same/next-day, front desk holds it). Miss it → you only lose the pager family.
-- ✅ **SPI flash dump** — covered by the CH341A + SOIC8 kit above.
-- ✅ **No-solder probing** — covered by owned IC-hook clips + jumpers.
+### FreeWili2 coverage map (specs confirmed 2026-08-02)
+What the FreeWili2 covers, and what external gear it retires:
+
+| FreeWili2 capability | Covers (challenge family) | Retires |
+|---|---|---|
+| RP2350 GPIO + **SW-selectable IO voltage** + ADC measure | UART/serial, SPI/I2C bit-bang (safer voltage than CH341A) | dedicated USB-TTL → Waveshare = backup |
+| **Lattice iCE40 FPGA** + PIO | logic capture: UART/RS232, **WS2812 @ 800 kHz**, SPI/I2C sniff | standalone logic analyzer |
+| **IR Tx/Rx** (case window) | IR challenges (exact Sony codes) | Flipper/universal remote for IR |
+| **CC1101** sub-GHz (300–928 MHz OOK/FSK) | sub-GHz capture/replay; *maybe* POCSAG if freq ≤ 928 MHz | Flipper for sub-GHz |
+| **STM32WLE5 LoRa** + CC1101 | Meshtastic (915 MHz US) | (redundant w/ T-Deck) |
+| **ST25R3916B** (13.56 MHz) + 125 kHz | NFC + RFID | separate NFC/RFID reader |
+| **RPi Debug Probe** (SWD/JTAG) | ARM debug / trace | ST-Link / J-Link clone |
+| **Prog PSU 1–5.5 V + MOSFET crowbar** | voltage / fault **glitching** | ChipWhisperer-lite scenarios |
+| Analog in/out (op-amp + PGA) | analog signal / DAC-ADC puzzles | — |
+| **4-mic array + 3.5 mm jack** | audio capture (reversed VM, coin tones) | (still analyze in Audacity/sox) |
+| Dual microSD + high-speed SD reader | badge SD, dump storage | card reader |
+| Linux (RPi CM0) | light on-device tooling | (heavy RE still on the Pi/laptop) |
+
+**FreeWili2 can NOT do (still bring):** physical **surgery** (desolder / cut trace — needs iron, Chip Quik, tweezers, cutters, X-Acto, multimeter, loupe/scope); **apply** a magnet to the *target* (its BMM350 only *measures* — magnet owned); **canned air** for thermistor-cold on the target; a reliable **flashrom** dump path (CC/CH341A kit — FreeWili can bit-bang SPI at safe voltage as a backup, but no flashrom support); and wideband **band survey / guaranteed POCSAG** (RTL-SDR — see below).
+
+### Tier 1 — status
+- ✅ **SPI flash dump** — CH341A + SOIC8 kit (FreeWili SPI bit-bang = safer-voltage backup).
+- ✅ **No-solder probing** — owned IC-hook clips + jumpers.
+- ✅ **Logic / IR / sub-GHz / JTAG / NFC / glitching** — all folded into the FreeWili2 (see map).
+- **RTL-SDR — now OPTIONAL (was the gap).** The CC1101 can capture sub-GHz and *may* decode POCSAG when the challenge freq is ≤ 928 MHz, but it's narrowband (no waterfall to *find* unknown signals) and US paging often sits at **929–932 MHz — just above the CC1101 ceiling**. RTL-SDR stays the guaranteed pager tool + band-survey scope. Grab one at [Hacker Warehouse](https://hackerwarehouse.com/product/rtlsdr/) (~$35, DC34 vendor) if convenient; no longer a must-have.
 
 ### Tier 2 — surgery kit (for the hardware-hacking challenges)
 Portable iron (Pinecil / TS101, USB-C) + solder / **flux** / desolder wick + **Chip Quik** low-melt (clean battery-holder removal); fine tweezers, flush cutters, **X-Acto** (trace cuts), pocket **multimeter** (continuity before/after a cut), **loupe or clip-on USB microscope** (Wingdings silkscreen under the ribbon). Solder at the Hardware Hacking Village, not on hotel carpet.
@@ -119,7 +140,7 @@ Portable iron (Pinecil / TS101, USB-C) + solder / **flux** / desolder wick + **C
 - ✅ Strong **neodymium magnet** (owned) — Hall-effect triggers.
 - ✅ **Meshtastic** (owned — T-Deck, 915 MHz US) — DC33 ran a Meshtastic BBS; decent odds it recurs.
 - **Canned air** for thermistor-**cold** — *buy in Vegas* (TSA hassle); the iron covers thermistor-hot.
-- **Flipper Zero** *if owned* — exact-code IR + sub-GHz + NFC (else the FreeWili's IR likely covers it).
+- ~~Flipper Zero~~ — **not needed**; the FreeWili2 covers IR + sub-GHz + NFC + RFID.
 
 ### Tier 4 — logistics that make or break the weekend
 Known-good USB-C **data** cables (label them — charge-only cables are the #1 time-sink) · USB **battery bank** · powered **USB hub** · A↔C adapters · **microSD + reader** · laptop/Pi with the toolchain · **notebook + Sharpie + parts bags** (photo every irreversible mod).
