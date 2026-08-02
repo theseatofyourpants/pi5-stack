@@ -17,8 +17,8 @@ STACK_ROOT="$(cd "$(dirname "$0")" && pwd)"; export STACK_ROOT
 source "$STACK_ROOT/lib/common.sh"
 
 DEFAULT_LAYERS=(00-core 10-skills 20-mcp-core 30-ap-testbed 40-failsafe)
-OPTIN_LAYERS=(50-c2-sliver 51-c2-mythic 52-phishing 60-sensors 70-automation)
-FULL_ORDER=(00-core 10-skills 20-mcp-core 30-ap-testbed 40-failsafe 50-c2-sliver 51-c2-mythic 52-phishing 60-sensors 70-automation 90-verify)
+OPTIN_LAYERS=(50-c2-sliver 51-c2-mythic 52-phishing 55-ctf-tools 60-sensors 70-automation)
+FULL_ORDER=(00-core 10-skills 20-mcp-core 30-ap-testbed 40-failsafe 50-c2-sliver 51-c2-mythic 52-phishing 55-ctf-tools 60-sensors 70-automation 90-verify)
 
 DRY=0; CHECK=0; FROM=""; SELECTED=()
 

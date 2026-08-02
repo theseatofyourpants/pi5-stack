@@ -154,6 +154,9 @@ Pinball tie-in is directly relevant to the [[CTF-Toolkit]] `nudge` work — AND!
 
 Physical gear detail, links, and examples: **[[AND-XOR-Hardware-Gear]]**.
 
+> [!note] Rebuild coverage
+> This whole toolchain is reproduced by the opt-in `pi5-stack` layer **`55-ctf-tools`** (apt: frotz, multimon-ng, steghide, sox, foremost, picocom, rtl-sdr/433, sigrok-cli, ghidra, python3-pycryptodome/gmpy2/pwntools) + a user-space **ztools** build (`payload/scripts/install-ztools.sh`, since `infodump`/`txd` aren't apt-installable). On Debian, pycryptodome imports as **`Cryptodome`**, not `Crypto`.
+
 ---
 
 ## 8. How it maps to this stack
