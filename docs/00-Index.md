@@ -18,6 +18,7 @@ The home base for the whole build. This vault maps the **AI-orchestrated C2 + de
 > - **`skills/`** — the red/blue/CTF/ops capability writeups (the 2026-08-01 expansion)
 > - **`mcp/`** — one note per MCP server
 > - **`infrastructure/`** — C2 servers, sensors, testbed, e-ink panel, scheduled jobs
+> - **`ctf-references/`** — event-specific CTF field guides ([[AND-XOR-5n4ck3y]], [[AND-XOR-Hardware-Gear]])
 
 ## 🗺️ Core maps
 
@@ -71,7 +72,7 @@ Custom `~/.claude/agents/*.md` orchestrators. Index: [[Operator-Skills]]
 | Red — post-ex | [[Post-Exploitation]] | ad-attack · priv-esc · loot · lateral-move (the Phase 6 loop) |
 | Red — initial access | [[phish-sim]] | authorized phishing/SE (Phase 4b front door) |
 | Blue | [[Blue-Team-Tools]] | threat-hunt · phish-analyze · ioc-enrich · sensor-tune |
-| CTF | [[CTF-Toolkit]] | ctf-triage/pwn/rev/forensics · nudge |
+| CTF | [[CTF-Toolkit]] | ctf-triage/pwn/rev/forensics · nudge · andxor-ctf · refs: [[AND-XOR-5n4ck3y]], [[AND-XOR-Hardware-Gear]] |
 | Ops / meta | [[Stack-Ops-Skills]] | mcp-doctor · add-mcp · stack-restore · vault-sync · pi5-stack-sync |
 
 ## 🏗️ Infrastructure
