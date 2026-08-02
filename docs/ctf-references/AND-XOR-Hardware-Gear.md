@@ -95,6 +95,35 @@ The physical tooling that recurs across AND!XOR / 5n4ck3y (and badge CTFs genera
 
 ---
 
+## DC34 (2026) packing list & current kit
+
+Tailored to the AND!XOR / 5n4ck3y challenge families above; tiered by value, mapping the current kit against the gaps.
+
+### Current kit
+- **FreeWili2** — *picking up at DC34.* RP2350 + FPGA, Python-programmable hardware multitool: GPIO / UART / SPI / I2C bit-bang, IR, buttons + display, some sub-GHz RF. Covers much of the serial / IR / GPIO surface. ⚠ **Verify its final RF + logic-analyzer specs** — that decides whether the SDR / standalone analyzer below are still needed (assume not-wideband for now).
+- **Waveshare USB-to-TTL** — dedicated 3.3 V serial line. **Set the jumper to 3.3 V before touching a badge.** The reliable UART path when the FreeWili is busy; keep spare jumper leads.
+- **CH341A + SOIC8 clip kit** (ACEIRMC, [amazon B07V2M5MVH](https://www.amazon.com/dp/B07V2M5MVH)) — CH341A programmer + SOIC8/SOP8 test clip + **1.8 V adapter** + SOP8→DIP8 socket. Covers the whole **SPI-flash-dump** line in one box. ⚠ the classic CH341A drives ~5 V on its data pins even at 3.3 V VCC — fine for *reading* most 25-series 3.3 V flash; use the 1.8 V adapter for 1.8 V chips; consider the 3.3 V I/O mod for sensitive parts. `flashrom -p ch341a_spi -r dump.bin`.
+- **Software toolchain** — already installed on the Pi 5 stack (dfrotz / infodump / txd, ghidra, radare2, multimon-ng, steghide, sox, foremost, picocom, sigrok-cli, hashcat / john; pycryptodome as **`Cryptodome`**). Reproduced by the `55-ctf-tools` layer — see [[AND-XOR-5n4ck3y]] §8.
+
+### Tier 1 — real gaps (buy)
+- **RTL-SDR v4 + ~900 MHz whip/telescopic antenna** — POCSAG/FLEX pager decode; the FreeWili's radio won't demod it. RX-only, ~$35.
+- ✅ **SPI flash dump** — covered by the CH341A + SOIC8 kit above.
+- **IC-hook / grabber probe clips + Dupont jumpers** (M-M / M-F / F-F) — probe pads & header pins **without soldering**; pairs with both the Waveshare and FreeWili. Cheapest, highest-convenience item.
+
+### Tier 2 — surgery kit (for the hardware-hacking challenges)
+Portable iron (Pinecil / TS101, USB-C) + solder / **flux** / desolder wick + **Chip Quik** low-melt (clean battery-holder removal); fine tweezers, flush cutters, **X-Acto** (trace cuts), pocket **multimeter** (continuity before/after a cut), **loupe or clip-on USB microscope** (Wingdings silkscreen under the ribbon). Solder at the Hardware Hacking Village, not on hotel carpet.
+
+### Tier 3 — cheap, challenge-specific
+- Strong **neodymium magnet** — Hall-effect triggers.
+- **Canned air** for thermistor-**cold** — *buy in Vegas* (TSA hassle); the iron covers thermistor-hot.
+- **Flipper Zero** *if owned* — exact-code IR + sub-GHz + NFC (else the FreeWili's IR likely covers it).
+- **Meshtastic node** (Heltec V3 / T-Beam, **915 MHz US**) — DC33 ran a Meshtastic BBS; decent odds it recurs.
+
+### Tier 4 — logistics that make or break the weekend
+Known-good USB-C **data** cables (label them — charge-only cables are the #1 time-sink) · USB **battery bank** · powered **USB hub** · A↔C adapters · **microSD + reader** · laptop/Pi with the toolchain · **notebook + Sharpie + parts bags** (photo every irreversible mod).
+
+**Don'ts:** no WiFi **de-auth** (venue ban / legal risk) · never rely on a single cable or power path.
+
 ## Badge photo galleries & references (images live here)
 
 - [AND!XOR DC26 badge — Hackaday](https://hackaday.io/project/28389-andxor-dc26-badge) (photos, teardown)
