@@ -120,21 +120,43 @@ def scan_networks():
     return nets
 
 def activate_ap():
-    """Bring up the NM hotspot."""
+    """Bring up the failsafe AP with pinned, brcmfmac-friendly settings.
+
+    We deliberately do NOT use `nmcli device wifi hotspot` — its defaults leave
+    band/channel on auto, so the Pi's built-in Broadcom (brcmfmac) radio tends to
+    start the AP on whatever band it was last a *client* on, often a 5 GHz DFS
+    channel. brcmfmac AP mode does not perform DFS/CAC and 5 GHz AP is unreliable,
+    so clients fail to associate: phones report "incorrect password" and laptops
+    time out. Pin 2.4 GHz / channel 6 / WPA2-PSK / PMF-disabled for maximum
+    client compatibility.
+    """
     ssid = state.get("ap_ssid")
     pwd  = state.get("ap_password")
     logging.info("Activating AP: %s", ssid)
-    # Delete stale profile if it exists
+    # Recreate the profile each time so a stale auto-band config can't linger.
     _run(["nmcli", "connection", "delete", AP_CON_NAME])
-    r = _run([
-        "nmcli", "device", "wifi", "hotspot",
-        "ifname", AP_IFACE,
-        "con-name", AP_CON_NAME,
-        "ssid", ssid,
-        "password", pwd,
+    add = _run([
+        "nmcli", "connection", "add",
+        "type", "wifi", "ifname", AP_IFACE, "con-name", AP_CON_NAME,
+        "autoconnect", "no", "ssid", ssid,
+        "802-11-wireless.mode", "ap",
+        "802-11-wireless.band", "bg",                 # 2.4 GHz — universal client support
+        "802-11-wireless.channel", "6",               # fixed non-DFS channel
+        "ipv4.method", "shared",                      # NM dnsmasq -> 10.42.0.1 + DHCP
+        "ipv6.method", "ignore",
+        "802-11-wireless-security.key-mgmt", "wpa-psk",
+        "802-11-wireless-security.proto", "rsn",
+        "802-11-wireless-security.pairwise", "ccmp",
+        "802-11-wireless-security.group", "ccmp",
+        "802-11-wireless-security.pmf", "1",          # 1 = disable PMF (brcmfmac AP compat)
+        "802-11-wireless-security.psk", pwd,
     ], timeout=20)
-    if r.returncode != 0:
-        logging.error("AP activate failed: %s", r.stderr)
+    if add.returncode != 0:
+        logging.error("AP profile add failed: %s", add.stderr)
+        return False
+    up = _run(["nmcli", "connection", "up", AP_CON_NAME], timeout=30)
+    if up.returncode != 0:
+        logging.error("AP activate failed: %s", up.stderr)
         return False
     state.set("mode", "ap")
     logging.info("AP active — connect to '%s' (pw: %s)", ssid, pwd)
