@@ -86,6 +86,7 @@ Custom `~/.claude/agents/*.md` orchestrators. Index: [[Operator-Skills]]
 - [[Adversarial-Honeypot-Hotpot]] — deception layer on the same AP: fake bait services + honeytokens that observe & attribute unbidden probers (no compromise of the prober)
 - [[wifi-failsafe]] — fallback AP + captive portal on wlan0 when the Pi loses Wi-Fi
 - [[Eink-Panel]] — Pi Zero 2 W + 2.13" e-ink companion: glanceable hardware status board (polls the admin console's /api/panel)
+- [[VM-Lab-Clone]] — 📐 *proposed*: a Kali arm64 `vm` build profile on an Apple Silicon MacBook (software + USB-hardware half of the stack; single-repo, no fork)
 - [[Scheduled-Jobs]] — stack-cron systemd timers: boot/daily [[stack-status]], 6-hourly [[triage-alerts]], nightly redacted backup
 - [[Phishing-Infra]] — gophish (campaigns) + evilginx (AiTM session/MFA-cookie capture); per-engagement infra behind [[phish-sim]]
 

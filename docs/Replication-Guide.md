@@ -71,3 +71,4 @@ Drop the seven `*.md` files into `~/.claude/agents/` (see [[Operator-Skills]]). 
 
 ## Related
 - [[Architecture-Overview]] · [[Reboot-Runbook]]
+- [[VM-Lab-Clone]] — 📐 *proposed* `vm` build profile: same rebuild on a Kali arm64 VM (Apple Silicon), hardware layers capability-probed
