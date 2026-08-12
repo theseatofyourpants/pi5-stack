@@ -1,16 +1,17 @@
 ---
 title: VM Lab Clone (Kali on Apple Silicon)
-tags: [infra, replication, vm, proposed]
-status: proposed
+tags: [infra, replication, vm]
+status: in-progress
 updated: 2026-08-12
 ---
 
 # VM Lab Clone — Kali on an Apple Silicon MacBook
 
-> [!warning] Proposed / design note — NOT built yet
-> This documents a planned `vm` build profile of the [[Replication-Guide|rebuild]].
-> Nothing here is deployed. It exists so the build, when we do it, is one-repo and
-> low-drift. See [[Architecture-Overview]] for the live Pi stack this mirrors.
+> [!info] Selector implemented; VM not yet stood up
+> The `pi|vm` build-profile **selector is built** in the [[Replication-Guide|rebuild]]
+> (branch `feat/vm-profile`, tracks issue #1). What remains is standing up an actual
+> VM: the bring-up runbook + real-hardware validation (Mythic arm64, USB passthrough).
+> See [[Architecture-Overview]] for the live Pi stack this mirrors.
 
 ## Purpose
 A Kali arm64 VM on an Apple Silicon MacBook that runs the **software + USB-hardware
@@ -79,7 +80,7 @@ which "has no arm64 build, runs on the x86 laptop.")
 |---|---|
 | `30-ap-testbed` (+ hot-pot) | a second wifi iface appears (`iw dev` shows the passed-through `mt76`). Already **udev/event-driven** off the dongle — see [[Autonomous-AP-Testbed]]. |
 | `40-failsafe` | a built-in client radio to "lose" exists. **Normally skipped in the VM** (see below). |
-| `eink-panel` | `spidev` present. Never true in a VM → always skipped. |
+| `eink-panel` | not a main-build layer at all — it's a **separate companion Pi Zero 2 W**, so nothing to skip in the Pi/VM bootstrap. (`has_spidev` probe exists for future use.) |
 
 ## Layer disposition
 | Layer | VM? | Note |
@@ -126,13 +127,18 @@ signature (built-in failsafe radio + e-ink HAT).
 - **Secrets:** the VM needs its **own** git-ignored `secrets.env`. Reusing the same
   API keys on two live nodes can trip provider rate limits / ToS — prefer separate keys.
 
-## Work items (when we build)
-1. `ARCH=$(dpkg --print-architecture)` across the hardcoded `linux-arm64` pulls (`00`, `50`, sensor build).
-2. Add `PROFILE=vm|pi` + a `vm` layer set to `bootstrap.sh`.
-3. Capability-probe self-skips in `30-ap-testbed`, `40-failsafe`, and the eink install.
-4. Make `90-verify.sh` assert only the active profile's expected services.
-5. Ensure `mt76` firmware in `00-core`; document the hypervisor + USB-passthrough steps.
-6. A short **VM bring-up runbook** (hypervisor, guest install, passthrough, `secrets.env`, `./bootstrap.sh --profile vm`).
+## Work items
+**Selector implemented 2026-08-12** (branch `feat/vm-profile` → PR, tracks issue #1):
+- [x] `ARCH=$(dpkg --print-architecture)` for the arch-specific pulls — **`00-core`** (Go) and **`50-c2-sliver`** (Sliver binary). *(Realization: `60-sensors`' Suricata source-build is arch-agnostic and already correct for arm64 — no change needed.)*
+- [x] `PROFILE=pi|vm` (+ `--profile`, auto-detected) and a profile-specific default layer set in `bootstrap.sh`; capability probes (`have_builtin_wifi` / `have_ap_dongle` / `has_spidev`, `ARCH`) live in `lib/common.sh`.
+- [x] Capability self-skip on **`40-failsafe`** (`have_builtin_wifi`). *(Realization: **`30-ap-testbed` installs on both** — it's files + a udev rule that fires when the dongle appears, so a build-time probe would wrongly skip it; and **eink has no build layer** — it's a separate companion Pi — so neither needs a guard.)*
+- [x] `90-verify.sh` profile-aware — the `wifi-failsafe` hard-check runs only on `pi`.
+- [x] `mt76`/`firmware-misc-nonfree` best-effort install in `00-core` for the dongle.
+
+**Remaining (needs a real VM):**
+- [ ] Short **VM bring-up runbook** (hypervisor, guest install, USB passthrough, `secrets.env`, `./bootstrap.sh --profile vm`).
+- [ ] Validate **Mythic arm64** per payload type on the VM.
+- [ ] Confirm **USB-passthrough stability** for the MT7612U under the chosen hypervisor.
 
 ## Open risks
 - Mythic arm64 payload-type coverage (verify, don't assume).
