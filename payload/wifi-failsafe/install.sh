@@ -12,6 +12,19 @@ cp "$SERVICE_FILE" /etc/systemd/system/wifi-failsafe.service
 systemctl daemon-reload
 systemctl enable wifi-failsafe.service
 
+# Captive-portal DNS hijack for the NM shared-mode failsafe AP. Without this the
+# OS captive probes (captive.apple.com etc.) are forwarded upstream and time out
+# on the internet-less AP, so iOS never shows the login sheet.
+HIJACK_SRC="$SCRIPT_DIR/dnsmasq-shared.d/captive-failsafe.conf"
+if [ -f "$HIJACK_SRC" ]; then
+    install -d -m0755 /etc/NetworkManager/dnsmasq-shared.d
+    install -m0644 "$HIJACK_SRC" /etc/NetworkManager/dnsmasq-shared.d/captive-failsafe.conf
+    # NM re-reads dnsmasq-shared.d when it next starts a shared dnsmasq (i.e. next
+    # AP activation); reload so it's picked up without waiting for a restart.
+    systemctl reload NetworkManager 2>/dev/null || systemctl restart NetworkManager || true
+    echo "[+] Installed captive-portal DNS hijack (dnsmasq-shared.d/captive-failsafe.conf)."
+fi
+
 echo "[+] Service installed and enabled."
 echo ""
 echo "    Start now:  sudo systemctl start wifi-failsafe"

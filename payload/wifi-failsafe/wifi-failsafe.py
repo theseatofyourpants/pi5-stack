@@ -200,11 +200,15 @@ app.logger.disabled = True
 log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
 
-# Captive portal detection — redirect Apple/Android/Windows probes to the portal
+# Captive portal detection — redirect Apple/Android/Windows/Firefox probes to the
+# portal. These MUST also be DNS-hijacked to 10.42.0.1 (see
+# dnsmasq-shared.d/captive-failsafe.conf) or the probe never reaches Flask.
 CAPTIVE_HOSTS = {
     "captive.apple.com", "www.apple.com",
-    "connectivitycheck.gstatic.com", "clients3.google.com",
-    "www.msftconnecttest.com", "www.msftncsi.com",
+    "connectivitycheck.gstatic.com", "connectivitycheck.android.com",
+    "clients3.google.com", "clients4.google.com",
+    "www.msftconnecttest.com", "www.msftncsi.com", "dns.msftncsi.com",
+    "detectportal.firefox.com", "network-test.debian.org",
 }
 
 @app.before_request
