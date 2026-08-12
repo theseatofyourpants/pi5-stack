@@ -45,18 +45,34 @@ which "has no arm64 build, runs on the x86 laptop.")
 > Make the hardcoded strings `ARCH=$(dpkg --print-architecture)`-driven anyway, so the
 > same profile also survives an Intel/amd64 host later. Cheap insurance.
 
-## Mechanism: a `vm` profile, NOT a fork
-A separate fork repo would force every fix (e.g. the Aug-2026 captive-portal DNS
-hijack — one commit that fixed the live Pi *and* the rebuild) to be hand-ported to
-two places forever. Instead, **one repo, capability-probed layers:**
+## Mechanism: a selector in `main`, NOT a fork or branch (decided 2026-08-12)
+> [!success] Decision — locked
+> **Selector in the main repo, capability-probed. No fork, no permanent `vm` branch.**
+> The Pi-vs-VM delta is a handful of conditionals (arch var, 3 self-skipping hardware
+> layers, profile-aware verify), not a divergent codebase — so it's expressed as
+> runtime selection, not structural separation. A fork/branch would impose a perpetual
+> port/merge tax and let the two targets drift; single-repo means a fix like the
+> Aug-2026 captive-portal DNS hijack lands on both in **one commit**. The only branch
+> used is a *temporary* feature branch to develop the refactor, then merged and deleted.
 
+**Design — auto-detect first, `--profile` as override:**
 - `bootstrap.sh` already selects layers (`--layers`, `--from`, `--all`,
-  `DEFAULT_LAYERS` vs `OPTIN_LAYERS`). A `vm` build is largely "run the software
-  layers, let hardware layers self-skip."
-- Add `PROFILE=vm|pi` (env or flag) that (1) picks a layer set and (2) makes each
-  hardware layer **early-exit on a capability probe** rather than on a hardcoded host.
+  `DEFAULT_LAYERS` vs `OPTIN_LAYERS`) — the seed of this. Add a `--profile vm|pi`
+  (default: **auto**) that mainly drives what `verify` expects.
+- **Lead with capability auto-detection** so the *same* `./bootstrap.sh` runs correctly
+  on either host — each hardware layer self-skips when its device is absent:
+  ```bash
+  ARCH=$(dpkg --print-architecture)          # arm64 on both Pi + Apple-Silicon VM
+  # 40-failsafe.sh
+  have_builtin_wifi || { log "no built-in wlan0 → skip failsafe (VM)"; exit 0; }
+  # 30-ap-testbed.sh  (already udev-gated; guard the installer too)
+  have_ap_dongle    || { log "no MT7612U present → skip testbed"; exit 0; }
+  ```
 - Make `layers/90-verify.sh` **profile-aware** — today it `chk`s `hostapd` and
-  hardware services and would *fail the VM build* otherwise.
+  hardware services and would *fail the VM build* otherwise; it should assert only
+  what the active profile's host is expected to have.
+- `PROFILE` stays a thin override: force-skip a present-but-unwanted layer, or make
+  verify strict. It is **not** the primary gate — the capability probe is.
 
 ### Capability probes (per layer)
 | Layer | Probe → run if… |
@@ -84,6 +100,13 @@ two places forever. Instead, **one repo, capability-probed layers:**
 The dividing line is **USB-attached (crosses) vs. board-bonded (doesn't):**
 - **MT7612U dongle** (`wlan1`, ap-testbed AP) → USB passthrough. `mt76` AP mode is
   actually *more* reliable than the Pi's brcmfmac — this is an upgrade, not a compromise.
+  > [!note] One shared dongle, moved between hosts
+  > Plan is to physically move the **same** MT7612U between the Pi and the Mac VM — so
+  > **only one host runs the AP-testbed at a time**, whichever holds the dongle. This is
+  > already handled cleanly by the capability design: unplugging it fires the Pi's udev
+  > **teardown**, and plugging it into the VM (passthrough) fires the same **bring-up**
+  > there. No config toggle needed — the hardware's presence *is* the selector. Just
+  > don't expect both boxes to have a live testbed simultaneously.
 - **hw-bench gear** (CH341A flash programmer, logic analyzer, Bus Pirate, UART
   adapters) → all USB → passthrough. The VM becomes a portable [[CTF-Toolkit|bench]].
 - **[[wifi-failsafe]]** (built-in `wlan0`) → does not cross. It solves the *headless-Pi-
