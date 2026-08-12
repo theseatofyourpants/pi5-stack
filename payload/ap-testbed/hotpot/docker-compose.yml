@@ -19,7 +19,9 @@ networks:
 
 services:
   cowrie:                         # medium-interaction SSH + Telnet honeypot
-    image: cowrie/cowrie:latest
+    # Pinned by digest (was :latest) for reproducible rebuilds — see versions.env
+    # COWRIE_DIGEST. Bump deliberately: re-pull, then update the digest here + there.
+    image: cowrie/cowrie@sha256:dd1dbad5b564729f2536c360c4719fcf73bf3c6a3bd61e86d6b1f9924d15eb28
     container_name: ap-hotpot-cowrie
     restart: unless-stopped
     networks: [hotpot]
