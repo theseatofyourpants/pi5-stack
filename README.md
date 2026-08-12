@@ -101,6 +101,28 @@ connects" machine — authorization is the load-bearing wall.
   `sudoers` helper (`/usr/local/sbin/apt-testbed-authorize`) so the web app can open
   one MAC's egress but nothing else.
 
+### 🍲 The hot-pot — adversarial deception on the same AP
+Riding on the testbed is an **opt-in deception layer** (Docker, installed by layer
+`30` when Docker is present) that flips the script: instead of scanning devices that
+*consent*, it quietly observes devices that probe *uninvited*. It never touches or
+attacks the prober — it just watches and attributes.
+
+- **Bait services (Dockerised, on the isolated AP subnet):** **Cowrie** SSH/Telnet
+  (captures creds + session transcripts), a read-only **SMB share** of tempting
+  files, and a **fake-admin** login page.
+- **Honeytokens / canarytokens (the instrumented bait):** the bait files carry
+  phone-home tokens with two selectable backends —
+  - **local collector** — a homegrown beacon (`10.66.66.1:8686/t/<id>`) that fires
+    the instant a token is touched on-net (fully automatic), and
+  - **canarytokens** — operator-minted [canarytokens.org](https://canarytokens.org)
+    URLs (seeded from `state/canarytokens.json`) for the high-fidelity *"someone
+    opened the file **off**-network"* signal (e.g. an AWS-key or `.docx` canary).
+- **Isolation is the load-bearing invariant:** the deception subnet can't egress or
+  reach your LAN — asserted, not assumed.
+- **Kept sharp by [`/hotpot-maintain`](docs/agents/hotpot-maintain.md):** health-checks
+  the bait, re-seeds/rotates tokens, and rolls up captured hostile-recon intel for the
+  blue-team pipeline. Full writeup: [`docs/infrastructure/Adversarial-Honeypot-Hotpot.md`](docs/infrastructure/Adversarial-Honeypot-Hotpot.md).
+
 ## wifi-failsafe
 If the Pi loses its Wi-Fi uplink, a systemd watcher stands up a **fallback AP +
 captive portal on `wlan0`** so you can pick a new network from your phone — keeping a
