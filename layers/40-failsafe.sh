@@ -4,6 +4,14 @@
 set -euo pipefail
 source "$STACK_ROOT/lib/common.sh"
 
+# The failsafe manages the built-in client radio (wlan0) as a fallback AP. A VM has
+# no built-in radio, so there is nothing to fail over — self-skip. (The VM's uplink
+# is the host vNIC, always up.) Pass a USB Wi-Fi as wlan0 only to dev-test this code.
+if ! have_builtin_wifi; then
+  log "40-failsafe: no built-in Wi-Fi radio (profile=$PROFILE) — skipping failsafe install"
+  exit 0
+fi
+
 DEST="$HOME/wifi-failsafe"
 log "deploying wifi-failsafe -> $DEST"
 mkdir -p "$DEST"
