@@ -69,8 +69,10 @@ echo "[*] Enabling + (re)starting the always-on admin console..."
 systemctl enable ap-testbed-admin.service
 systemctl restart ap-testbed-admin.service
 
-WLAN0_IP="$(ip -brief addr show wlan0 2>/dev/null | awk '{print $3}' | cut -d/ -f1)"
-TS_IP="$(ip -brief addr show tailscale0 2>/dev/null | awk '{print $3}' | cut -d/ -f1)"
+# Best-effort IPs for the banner — tolerate missing interfaces (a VM has no wlan0);
+# the || true keeps set -euo pipefail from aborting on a non-existent device.
+WLAN0_IP="$(ip -brief addr show wlan0 2>/dev/null | awk '{print $3}' | cut -d/ -f1 || true)"
+TS_IP="$(ip -brief addr show tailscale0 2>/dev/null | awk '{print $3}' | cut -d/ -f1 || true)"
 
 echo
 echo "=================================================================="
