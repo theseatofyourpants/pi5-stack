@@ -67,8 +67,11 @@ verify "mythic-mcp binary" test -x "$HOME/Mythic-MCP/mythic-mcp"
 # 5. caido-mcp-server (Go build) -> ~/.local/bin
 log "building caido-mcp-server…"
 clone_ref "$CAIDO_MCP_REPO" "${CAIDO_MCP_REF:-main}" "$HOME/caido-mcp-server"
-( cd "$HOME/caido-mcp-server" && go build -o "$HOME/.local/bin/caido-mcp-server" . ) || warn "caido MCP build failed"
-verify "caido-mcp-server binary" test -x "$HOME/.local/bin/caido-mcp-server"
+# main package is in ./cmd/caido-mcp-server (not top-level). caido is optional — the
+# Caido desktop app has no arm64 build and runs on the operator's x86 laptop — so a
+# missing caido MCP must never fail the layer.
+( cd "$HOME/caido-mcp-server" && go build -o "$HOME/.local/bin/caido-mcp-server" ./cmd/caido-mcp-server ) || warn "caido MCP build failed"
+[ -x "$HOME/.local/bin/caido-mcp-server" ] && ok "caido-mcp-server built" || warn "caido MCP not built (optional; Caido runs on the x86 laptop)"
 
 # 6. Caido runs on your laptop (no arm64 build) — manual, safe to skip now
 stop_for_manual "Caido (laptop) — optional" \
