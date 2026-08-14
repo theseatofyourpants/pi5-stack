@@ -64,7 +64,13 @@ stop_for_manual "Plug in the Wi-Fi dongle" \
 
 verify "admin service enabled" bash -lc 'systemctl is-enabled ap-testbed-admin 2>/dev/null | grep -q enabled'
 verify "egress helper installed" test -x /usr/local/sbin/apt-testbed-authorize
-verify "hot-pot unit present" test -f /etc/systemd/system/ap-testbed-hotpot.service
+# The hot-pot unit only exists if Docker was present to install it; on a box without
+# Docker (hot-pot intentionally skipped above) this is not a failure.
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  verify "hot-pot unit present" test -f /etc/systemd/system/ap-testbed-hotpot.service
+else
+  log "hot-pot unit — skipped (Docker not installed; run install-hotpot.sh after adding Docker)"
+fi
 ok "30-ap-testbed done."
 log "Admin console: http://<this-host-ip>:8787  (password was printed above)."
 log "NOTE: device scans need the MCP backends from layer 20-mcp-core (hexstrike/kali-server)."

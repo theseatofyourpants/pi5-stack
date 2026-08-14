@@ -1,32 +1,32 @@
 {
   "mcpServers": {
     "hexstrike": {
-      "command": "/home/tsoyp/hexstrike-ai-community-edition/hexstrike-env/bin/python3",
+      "command": "{{HOME}}/hexstrike-ai-community-edition/hexstrike-env/bin/python3",
       "args": [
-        "/home/tsoyp/hexstrike-ai-community-edition/hexstrike_mcp.py",
+        "{{HOME}}/hexstrike-ai-community-edition/hexstrike_mcp.py",
         "--server",
         "http://localhost:8899"
       ]
     },
     "pentest-ai": {
-      "command": "/home/tsoyp/pentest-ai/venv/bin/ptai",
+      "command": "{{HOME}}/pentest-ai/venv/bin/ptai",
       "args": [
         "mcp"
       ]
     },
     "mcp-kali-server": {
-      "command": "/home/tsoyp/MCP-Kali-Server/venv/bin/python3",
+      "command": "{{HOME}}/MCP-Kali-Server/venv/bin/python3",
       "args": [
-        "/home/tsoyp/MCP-Kali-Server/mcp-server/mcp_server.py",
+        "{{HOME}}/MCP-Kali-Server/mcp-server/mcp_server.py",
         "--server",
         "http://localhost:5000"
       ]
     },
     "wstg-pentest": {
-      "command": "/home/tsoyp/.local/bin/uv",
+      "command": "{{HOME}}/.local/bin/uv",
       "args": [
         "--directory",
-        "/home/tsoyp/autopentest-ai/server",
+        "{{HOME}}/autopentest-ai/server",
         "run",
         "server.py"
       ]
@@ -41,16 +41,16 @@
     "sliver-c2": {
       "command": "/usr/bin/node",
       "args": [
-        "/home/tsoyp/sec-sliver-c2-mcp/dist/index.js",
+        "{{HOME}}/sec-sliver-c2-mcp/dist/index.js",
         "--operator-config",
-        "/home/tsoyp/sliver-claude.cfg"
+        "{{HOME}}/sliver-claude.cfg"
       ],
       "env": {
-        "PYTHON_PATH": "/home/tsoyp/sec-sliver-c2-mcp/venv/bin/python3"
+        "PYTHON_PATH": "{{HOME}}/sec-sliver-c2-mcp/venv/bin/python3"
       }
     },
     "mythic": {
-      "command": "/home/tsoyp/Mythic-MCP/mythic-mcp",
+      "command": "{{HOME}}/Mythic-MCP/mythic-mcp",
       "args": [],
       "env": {
         "MYTHIC_URL": "https://localhost:7443",
@@ -61,7 +61,7 @@
       }
     },
     "caido": {
-      "command": "/home/tsoyp/.local/bin/caido-mcp-server",
+      "command": "{{HOME}}/.local/bin/caido-mcp-server",
       "args": [
         "serve"
       ],
@@ -80,9 +80,9 @@
       }
     },
     "greynoise": {
-      "command": "/home/tsoyp/greynoise-mcp/venv/bin/python",
+      "command": "{{HOME}}/greynoise-mcp/venv/bin/python",
       "args": [
-        "/home/tsoyp/greynoise-mcp/server.py"
+        "{{HOME}}/greynoise-mcp/server.py"
       ],
       "env": {
         "GREYNOISE_API_KEY": "{{GREYNOISE_API_KEY}}"

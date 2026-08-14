@@ -27,8 +27,10 @@ log "greynoise MCP (custom)…"
 mkdir -p "$HOME/greynoise-mcp"
 rsync -a "$STACK_ROOT/payload/greynoise-mcp/" "$HOME/greynoise-mcp/"
 [ -d "$HOME/greynoise-mcp/venv" ] || python3 -m venv "$HOME/greynoise-mcp/venv"
-"$HOME/greynoise-mcp/venv/bin/pip" -q install --upgrade pip httpx mcp
-verify "greynoise deps" "$HOME/greynoise-mcp/venv/bin/python" -c "import httpx, mcp"
+# Pin mcp to 1.x: server.py uses mcp.server.fastmcp.FastMCP, which the mcp 2.0
+# rewrite moved/removed — an unpinned install pulls 2.x and breaks the import.
+"$HOME/greynoise-mcp/venv/bin/pip" -q install --upgrade pip httpx "mcp<2"
+verify "greynoise deps" "$HOME/greynoise-mcp/venv/bin/python" -c "import httpx; from mcp.server.fastmcp import FastMCP"
 
 # ===== 2. mcp-kali-server (+ backend :5000) =====
 log "mcp-kali-server…"
@@ -38,6 +40,10 @@ clone_ref "$KALI_MCP_REPO" "${KALI_MCP_REF:-master}" "$HOME/MCP-Kali-Server"
 for r in requirements.txt requirements.kali.txt requirements.mcp.txt; do
   [ -f "$HOME/MCP-Kali-Server/$r" ] && "$HOME/MCP-Kali-Server/venv/bin/pip" -q install -r "$HOME/MCP-Kali-Server/$r" || true
 done
+# mcp_server.py imports mcp.server.fastmcp.FastMCP; the repo leaves mcp unpinned, so
+# a fresh install pulls mcp 2.x (fastmcp removed) and the MCP fails to launch. Force 1.x.
+"$HOME/MCP-Kali-Server/venv/bin/pip" -q install "mcp<2"
+verify "kali-server MCP deps" "$HOME/MCP-Kali-Server/venv/bin/python" -c "from mcp.server.fastmcp import FastMCP"
 
 # ===== 3. hexstrike (+ backend :8899 + web tools) =====
 log "hexstrike…"

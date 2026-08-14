@@ -9,7 +9,8 @@ log "apt: base packages…"
 as_root apt-get update -qq
 as_root apt-get install -y \
   git curl wget rsync jq ca-certificates build-essential \
-  python3 python3-pip python3-venv pipx \
+  cmake pkg-config libpq-dev \
+  python3 python3-pip python3-venv python3-dev pipx \
   python3-flask python3-markdown \
   hostapd dnsmasq iptables nmap \
   chromium network-manager
