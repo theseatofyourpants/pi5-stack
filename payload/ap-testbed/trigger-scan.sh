@@ -111,14 +111,27 @@ fi
 # Stream JSON events through the filter so the admin UI shows live progress.
 # pipefail is on, so guard with set +e to read claude's real exit via PIPESTATUS.
 set +e
+# Scope the scan's claude to ONLY the MCP servers device-assess uses (kali-server,
+# hexstrike, wstg-pentest), built from ~/.claude.json so their paths/keys stay right.
+# Otherwise claude loads all 10 configured MCPs (Mythic's 8 containers, a Playwright
+# browser, Sliver, …) whose startup + RAM cost pushed the scan past its timeout.
+# --strict-mcp-config makes claude ignore ~/.claude.json and use only this minimal set.
+SCAN_MCP="$(mktemp)"; trap 'rm -f "$SCAN_MCP"' EXIT
+python3 -c 'import json,sys
+keep={"mcp-kali-server","hexstrike","wstg-pentest"}
+d=json.load(open(sys.argv[1])).get("mcpServers",{})
+json.dump({"mcpServers":{k:v for k,v in d.items() if k in keep}}, open(sys.argv[2],"w"))' \
+  "$HOME/.claude.json" "$SCAN_MCP" 2>>"$SCANLOG" || cp "$HOME/.claude.json" "$SCAN_MCP"
 # -k 30: if claude ignores the SIGTERM at SCAN_TIMEOUT, SIGKILL it 30s later so a
 # hung/stuck scan can never keep running (an un-reaped claude orphaned for ~2h and
 # exhausted RAM on a small VM). PIPESTATUS[0] still reflects claude's real exit.
-timeout -k 30 "${SCAN_TIMEOUT:-600}" "$CLAUDE_BIN" -p --dangerously-skip-permissions \
+timeout -k 30 "${SCAN_TIMEOUT:-900}" "$CLAUDE_BIN" -p --dangerously-skip-permissions \
+  --mcp-config "$SCAN_MCP" --strict-mcp-config \
   --output-format stream-json --verbose "$PROMPT" \
   2>>"$SCANLOG" | python3 "$BASE/lib/stream-filter.py" >> "$SCANLOG"
 RC=${PIPESTATUS[0]}
 set -e
+rm -f "$SCAN_MCP"
 [ -n "$WATCHDOG_PID" ] && kill "$WATCHDOG_PID" 2>/dev/null || true
 # Belt-and-suspenders reap: kill any claude still lingering for THIS scan. Its argv
 # carries the unique report token ($OUTBASE), so this targets only this scan's process.
