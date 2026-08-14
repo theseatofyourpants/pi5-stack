@@ -9,7 +9,7 @@ pass=0; fail=0
 chk(){  local d="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$d"; pass=$((pass+1)); else err "$d"; fail=$((fail+1)); fi; }
 soft(){ local d="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$d"; else warn "$d — not installed (opt-in)"; fi; }
 
-hr; log "STACK VERIFY"; hr
+hr; log "STACK VERIFY"; log "profile: $PROFILE   arch: $ARCH"; hr
 
 log "— core —"
 chk "operator skills (device-assess)" test -f "$HOME/.claude/agents/device-assess.md"
@@ -23,7 +23,13 @@ chk "go"       test -x "$HOME/go-sdk/bin/go"
 log "— AP testbed + failsafe —"
 chk "ap-testbed-admin enabled"  bash -lc 'systemctl is-enabled ap-testbed-admin 2>/dev/null | grep -q enabled'
 chk "egress helper installed"   test -x /usr/local/sbin/apt-testbed-authorize
-chk "wifi-failsafe enabled"      bash -lc 'systemctl is-enabled wifi-failsafe 2>/dev/null | grep -q enabled'
+# wifi-failsafe is Pi-only (needs the built-in radio); on the VM profile it's not
+# installed, so only hard-check it on pi.
+if [ "$PROFILE" = pi ]; then
+  chk "wifi-failsafe enabled"    bash -lc 'systemctl is-enabled wifi-failsafe 2>/dev/null | grep -q enabled'
+else
+  log "wifi-failsafe — skipped (profile=$PROFILE, Pi-only)"
+fi
 
 log "— MCP backends —"
 soft "hexstrike backend :8899"   bash -lc 'ss -tln 2>/dev/null | grep -q :8899'

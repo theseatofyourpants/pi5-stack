@@ -10,8 +10,8 @@ SLIVER_VER="${SLIVER_VERSION:-v1.7.3}"
 
 # 1. sliver-server binary (arm64) -> ~/.local/bin
 if ! "$HOME/.local/bin/sliver-server" version 2>/dev/null | grep -q "$SLIVER_VER"; then
-  log "downloading sliver-server ${SLIVER_VER} (arm64, ~250MB)…"
-  curl -fL "https://github.com/BishopFox/sliver/releases/download/${SLIVER_VER}/sliver-server_linux-arm64" \
+  log "downloading sliver-server ${SLIVER_VER} (${ARCH}, ~250MB)…"
+  curl -fL "https://github.com/BishopFox/sliver/releases/download/${SLIVER_VER}/sliver-server_linux-${ARCH}" \
     -o "$HOME/.local/bin/sliver-server"
   chmod +x "$HOME/.local/bin/sliver-server"
 fi

@@ -16,12 +16,18 @@ as_root apt-get install -y \
 ok "apt packages installed"
 as_root systemctl unmask hostapd 2>/dev/null || true   # fresh installs mask it
 
+# Wi-Fi dongle firmware (MT7612U / mt76) for the AP-testbed radio — needed on the Pi
+# and in a VM when the dongle is passed through. Best-effort: non-fatal if the
+# non-free firmware pkg isn't available on this host.
+as_root apt-get install -y firmware-misc-nonfree 2>/dev/null \
+  || warn "firmware-misc-nonfree not installed — MT7612U dongle may need it for AP mode"
+
 # --- Go SDK (pinned) -> ~/go-sdk ---
 GO_VER="${GO_VERSION:-1.26.5}"
 if ! "$HOME/go-sdk/bin/go" version 2>/dev/null | grep -q "go${GO_VER}"; then
   log "installing Go ${GO_VER} -> ~/go-sdk"
   tmp="$(mktemp -d)"
-  curl -fsSL "https://go.dev/dl/go${GO_VER}.linux-arm64.tar.gz" -o "$tmp/go.tgz"
+  curl -fsSL "https://go.dev/dl/go${GO_VER}.linux-${ARCH}.tar.gz" -o "$tmp/go.tgz"
   rm -rf "$HOME/go-sdk"; mkdir -p "$HOME/go-sdk"
   tar -C "$tmp" -xzf "$tmp/go.tgz"
   mv "$tmp/go/"* "$HOME/go-sdk/"

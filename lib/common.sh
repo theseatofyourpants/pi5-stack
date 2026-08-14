@@ -60,3 +60,35 @@ mark_layer_done(){ touch "$STATE_FILE"; layer_is_done "$1" || echo "$1" >> "$STA
 
 need_cmd(){ command -v "$1" >/dev/null 2>&1; }
 as_root(){ if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo "$@"; fi; }
+
+# ── host profile + hardware capability probes ───────────────────────────────
+# One repo builds two targets: the Pi (built-in radio + GPIO) and a Kali arm64 VM
+# (no built-in radio, hardware attached over USB passthrough). PROFILE (pi|vm) is
+# auto-detected from hardware and only tunes what 90-verify asserts; the hardware
+# layers self-skip on the capability probes below regardless of PROFILE. ARCH drives
+# arch-specific downloads (Go, Sliver): arm64 on the Pi AND on an Apple-Silicon VM,
+# amd64 on an Intel host.
+ARCH="$(dpkg --print-architecture 2>/dev/null || echo arm64)"; export ARCH
+
+# _wifi_is_usb IFACE -> true if that wireless iface sits on the USB bus (a dongle).
+_wifi_is_usb(){ case "$(readlink -f "/sys/class/net/$1/device" 2>/dev/null)" in *usb*) return 0;; *) return 1;; esac; }
+# iterate wireless interfaces, calling back with each iface name
+_each_wifi(){ local d i; for d in /sys/class/net/*/wireless; do [ -e "$d" ] || continue; i="$(basename "$(dirname "$d")")"; "$1" "$i" && return 0; done; return 1; }
+
+# have_builtin_wifi -> a NON-USB wireless phy exists (the Pi's brcmfmac). This is the
+# pi-vs-vm discriminator: a VM has no built-in radio.
+have_builtin_wifi(){ _each_wifi _wifi_not_usb; }
+_wifi_not_usb(){ ! _wifi_is_usb "$1"; }
+# have_ap_dongle -> a USB wireless iface (e.g. MT7612U) is present (AP-testbed radio).
+have_ap_dongle(){ _each_wifi _wifi_is_usb; }
+# has_spidev -> a SPI device node exists (the e-ink HAT bus; Pi-only).
+has_spidev(){ ls /dev/spidev* >/dev/null 2>&1; }
+
+# detect_profile -> 'pi' if a built-in radio is present, else 'vm'.
+detect_profile(){ if have_builtin_wifi; then echo pi; else echo vm; fi; }
+
+# Resolve PROFILE now (honoring an explicit override); 'auto' (default) detects.
+# bootstrap.sh may re-resolve after parsing --profile.
+: "${PROFILE:=auto}"
+[ "$PROFILE" = auto ] && PROFILE="$(detect_profile)"
+export PROFILE

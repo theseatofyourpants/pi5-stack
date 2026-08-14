@@ -4,6 +4,7 @@
 # Usage:
 #   ./bootstrap.sh                       default layers (core..failsafe) ~20 min
 #   ./bootstrap.sh --all                 + C2 + sensors, ~1–2 hr
+#   ./bootstrap.sh --profile vm          Kali-VM profile (auto-detected; skips Pi-only HW)
 #   ./bootstrap.sh --layers 00-core,30-ap-testbed
 #   ./bootstrap.sh --from 51-c2-mythic   resume from a layer after a failure
 #   ./bootstrap.sh --check               run the verify layer only
@@ -16,24 +17,34 @@ set -euo pipefail
 STACK_ROOT="$(cd "$(dirname "$0")" && pwd)"; export STACK_ROOT
 source "$STACK_ROOT/lib/common.sh"
 
-DEFAULT_LAYERS=(00-core 10-skills 20-mcp-core 30-ap-testbed 40-failsafe)
 OPTIN_LAYERS=(50-c2-sliver 51-c2-mythic 52-phishing 55-ctf-tools 60-sensors 70-automation)
 FULL_ORDER=(00-core 10-skills 20-mcp-core 30-ap-testbed 40-failsafe 50-c2-sliver 51-c2-mythic 52-phishing 55-ctf-tools 60-sensors 70-automation 90-verify)
 
-DRY=0; CHECK=0; FROM=""; SELECTED=()
+DRY=0; CHECK=0; FROM=""; SELECTED=(); WANT_ALL=0
 
 usage(){ sed -n '3,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
 while [ $# -gt 0 ]; do case "$1" in
-  --all)     SELECTED=("${DEFAULT_LAYERS[@]}" "${OPTIN_LAYERS[@]}");;
+  --all)     WANT_ALL=1;;
   --layers)  IFS=',' read -ra SELECTED <<< "${2:-}"; shift;;
   --from)    FROM="${2:-}"; shift;;
+  --profile) PROFILE="${2:-}"; shift;;
   --check)   CHECK=1;;
   --dry-run) DRY=1;;
   -h|--help) usage;;
   *) die "unknown arg: $1 (try --help)";;
 esac; shift; done
 
-# default selection
+# resolve host profile (pi|vm); --profile overrides the auto-detect done in common.sh
+[ "${PROFILE:-auto}" = auto ] && PROFILE="$(detect_profile)"; export PROFILE
+# profile-specific default layer set — the VM has no built-in-radio failsafe (40)
+case "$PROFILE" in
+  pi) DEFAULT_LAYERS=(00-core 10-skills 20-mcp-core 30-ap-testbed 40-failsafe);;
+  vm) DEFAULT_LAYERS=(00-core 10-skills 20-mcp-core 30-ap-testbed);;
+  *)  die "unknown --profile: '$PROFILE' (use pi|vm|auto)";;
+esac
+
+# selection resolution
+[ "$WANT_ALL" -eq 1 ] && SELECTED=("${DEFAULT_LAYERS[@]}" "${OPTIN_LAYERS[@]}")
 [ ${#SELECTED[@]} -eq 0 ] && SELECTED=("${DEFAULT_LAYERS[@]}")
 # --check overrides everything with just the verify layer
 [ "$CHECK" -eq 1 ] && SELECTED=(90-verify)
@@ -45,7 +56,7 @@ if [ -n "$FROM" ]; then
 fi
 
 load_secrets
-hr; log "pi5-stack rebuild"; log "layers: ${SELECTED[*]}"; hr
+hr; log "pi5-stack rebuild"; log "profile: $PROFILE   arch: $ARCH"; log "layers: ${SELECTED[*]}"; hr
 
 if [ "$DRY" -eq 0 ]; then
   bash "$STACK_ROOT/lib/preflight.sh" || die "preflight failed"
