@@ -8,13 +8,26 @@ export PATH="$HOME/go/bin:$HOME/go-sdk/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PA
 
 clone_ref(){ local u="$1" r="$2" d="$3"; if [ -d "$d/.git" ]; then git -C "$d" fetch -q origin || true; else git clone -q "$u" "$d"; fi; git -C "$d" checkout -q "$r" 2>/dev/null || warn "checkout $r failed ($d)"; }
 
-# 0. docker
+# 0. docker — Kali ships docker.io natively; Docker's CE repo publishes no
+# 'kali-rolling' suite (get.docker.com fails), and forcing a Debian codename risks
+# dep conflicts on Kali. So install the native engine and drop in the official
+# compose v2 plugin binary (docker.io does not bundle it; Mythic needs `docker compose`).
 if ! need_cmd docker; then
-  log "installing docker…"
-  curl -fsSL https://get.docker.com | as_root sh
+  log "installing docker.io + containerd (Kali-native)…"
+  as_root apt-get install -y docker.io containerd
+  as_root systemctl enable --now docker || true
   as_root usermod -aG docker "$USER" || true
 fi
+if ! docker compose version >/dev/null 2>&1; then
+  DCV="${DOCKER_COMPOSE_VERSION:-$(curl -fsSL https://api.github.com/repos/docker/compose/releases/latest | grep -oP '"tag_name": "\K[^"]+')}"
+  log "installing docker compose v2 plugin ${DCV}…"
+  as_root mkdir -p /usr/local/lib/docker/cli-plugins
+  as_root curl -fsSL "https://github.com/docker/compose/releases/download/${DCV}/docker-compose-linux-$(uname -m)" \
+    -o /usr/local/lib/docker/cli-plugins/docker-compose
+  as_root chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+fi
 verify "docker" command -v docker
+verify "docker compose" docker compose version
 
 # 1. Mythic (clone + build mythic-cli)
 log "installing Mythic ${MYTHIC_VERSION:-v3.4.0}…"
@@ -45,14 +58,20 @@ fi
 # 4. Mythic-MCP (Go build)
 log "building Mythic-MCP…"
 clone_ref "$MYTHIC_MCP_REPO" "${MYTHIC_MCP_REF:-main}" "$HOME/Mythic-MCP"
-( cd "$HOME/Mythic-MCP" && { [ -f Makefile ] && make || go build -o mythic-mcp .; } ) || warn "Mythic-MCP build failed"
+# Build the MCP binary straight from ./cmd/mythic-mcp to the path claude.json expects
+# (~/Mythic-MCP/mythic-mcp). Avoid bare `make`: its default target runs a golangci-lint
+# step we don't install, and `make build` emits to bin/ (wrong path for the MCP entry).
+( cd "$HOME/Mythic-MCP" && go build -o mythic-mcp ./cmd/mythic-mcp ) || warn "Mythic-MCP build failed"
 verify "mythic-mcp binary" test -x "$HOME/Mythic-MCP/mythic-mcp"
 
 # 5. caido-mcp-server (Go build) -> ~/.local/bin
 log "building caido-mcp-server…"
 clone_ref "$CAIDO_MCP_REPO" "${CAIDO_MCP_REF:-main}" "$HOME/caido-mcp-server"
-( cd "$HOME/caido-mcp-server" && go build -o "$HOME/.local/bin/caido-mcp-server" . ) || warn "caido MCP build failed"
-verify "caido-mcp-server binary" test -x "$HOME/.local/bin/caido-mcp-server"
+# main package is in ./cmd/caido-mcp-server (not top-level). caido is optional — the
+# Caido desktop app has no arm64 build and runs on the operator's x86 laptop — so a
+# missing caido MCP must never fail the layer.
+( cd "$HOME/caido-mcp-server" && go build -o "$HOME/.local/bin/caido-mcp-server" ./cmd/caido-mcp-server ) || warn "caido MCP build failed"
+[ -x "$HOME/.local/bin/caido-mcp-server" ] && ok "caido-mcp-server built" || warn "caido MCP not built (optional; Caido runs on the x86 laptop)"
 
 # 6. Caido runs on your laptop (no arm64 build) — manual, safe to skip now
 stop_for_manual "Caido (laptop) — optional" \

@@ -38,8 +38,8 @@ sleep 5
 # 3. operator config for the MCP (mTLS cert) -> ~/sliver-claude.cfg
 if [ ! -f "$HOME/sliver-claude.cfg" ]; then
   log "generating operator config (claude-operator)…"
-  "$HOME/.local/bin/sliver-server" operator --name claude-operator --lhost 127.0.0.1 --save "$HOME/sliver-claude.cfg" \
-    || warn "operator gen failed — run: sliver-server operator --name claude-operator --lhost 127.0.0.1 --save ~/sliver-claude.cfg"
+  "$HOME/.local/bin/sliver-server" operator --name claude-operator --lhost 127.0.0.1 --permissions all --save "$HOME/sliver-claude.cfg" \
+    || warn "operator gen failed — run: sliver-server operator --name claude-operator --lhost 127.0.0.1 --permissions all --save ~/sliver-claude.cfg"
 fi
 verify "operator config present" test -f "$HOME/sliver-claude.cfg"
 
