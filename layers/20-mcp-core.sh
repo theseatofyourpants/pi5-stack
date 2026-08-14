@@ -27,8 +27,10 @@ log "greynoise MCP (custom)…"
 mkdir -p "$HOME/greynoise-mcp"
 rsync -a "$STACK_ROOT/payload/greynoise-mcp/" "$HOME/greynoise-mcp/"
 [ -d "$HOME/greynoise-mcp/venv" ] || python3 -m venv "$HOME/greynoise-mcp/venv"
-"$HOME/greynoise-mcp/venv/bin/pip" -q install --upgrade pip httpx mcp
-verify "greynoise deps" "$HOME/greynoise-mcp/venv/bin/python" -c "import httpx, mcp"
+# Pin mcp to 1.x: server.py uses mcp.server.fastmcp.FastMCP, which the mcp 2.0
+# rewrite moved/removed — an unpinned install pulls 2.x and breaks the import.
+"$HOME/greynoise-mcp/venv/bin/pip" -q install --upgrade pip httpx "mcp<2"
+verify "greynoise deps" "$HOME/greynoise-mcp/venv/bin/python" -c "import httpx; from mcp.server.fastmcp import FastMCP"
 
 # ===== 2. mcp-kali-server (+ backend :5000) =====
 log "mcp-kali-server…"
