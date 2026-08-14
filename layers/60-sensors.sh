@@ -13,7 +13,9 @@ bash "$STACK_ROOT/payload/scripts/zeek-install.sh" || warn "zeek install had iss
 log "bettercap (apt)…"
 as_root apt-get install -y bettercap || warn "bettercap install failed"
 
-# Suricata ET Open ruleset (~45k rules)
+# Suricata ET Open ruleset (~45k rules). suricata-update isn't bundled with a source
+# build; install it (independent Python tool, from Kali apt) so the rules get pulled.
+need_cmd suricata-update || as_root apt-get install -y suricata-update || warn "suricata-update install failed"
 if need_cmd suricata-update; then as_root suricata-update || warn "suricata-update failed"; fi
 
 verify "suricata" bash -lc 'command -v suricata || test -x /usr/local/bin/suricata'
