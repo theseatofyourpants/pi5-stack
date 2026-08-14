@@ -8,13 +8,26 @@ export PATH="$HOME/go/bin:$HOME/go-sdk/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PA
 
 clone_ref(){ local u="$1" r="$2" d="$3"; if [ -d "$d/.git" ]; then git -C "$d" fetch -q origin || true; else git clone -q "$u" "$d"; fi; git -C "$d" checkout -q "$r" 2>/dev/null || warn "checkout $r failed ($d)"; }
 
-# 0. docker
+# 0. docker — Kali ships docker.io natively; Docker's CE repo publishes no
+# 'kali-rolling' suite (get.docker.com fails), and forcing a Debian codename risks
+# dep conflicts on Kali. So install the native engine and drop in the official
+# compose v2 plugin binary (docker.io does not bundle it; Mythic needs `docker compose`).
 if ! need_cmd docker; then
-  log "installing docker…"
-  curl -fsSL https://get.docker.com | as_root sh
+  log "installing docker.io + containerd (Kali-native)…"
+  as_root apt-get install -y docker.io containerd
+  as_root systemctl enable --now docker || true
   as_root usermod -aG docker "$USER" || true
 fi
+if ! docker compose version >/dev/null 2>&1; then
+  DCV="${DOCKER_COMPOSE_VERSION:-$(curl -fsSL https://api.github.com/repos/docker/compose/releases/latest | grep -oP '"tag_name": "\K[^"]+')}"
+  log "installing docker compose v2 plugin ${DCV}…"
+  as_root mkdir -p /usr/local/lib/docker/cli-plugins
+  as_root curl -fsSL "https://github.com/docker/compose/releases/download/${DCV}/docker-compose-linux-$(uname -m)" \
+    -o /usr/local/lib/docker/cli-plugins/docker-compose
+  as_root chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+fi
 verify "docker" command -v docker
+verify "docker compose" docker compose version
 
 # 1. Mythic (clone + build mythic-cli)
 log "installing Mythic ${MYTHIC_VERSION:-v3.4.0}…"
