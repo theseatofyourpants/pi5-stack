@@ -7,7 +7,7 @@ BindsTo=ap-testbed-net.service
 
 [Service]
 Type=simple
-User=tsoyp
+User=__STACK_USER__
 # Bind :80 on the AP IP only, as an unprivileged user.
 Environment=PORTAL_PORT=80
 Environment=PORTAL_BIND=10.66.66.1
@@ -19,7 +19,7 @@ Environment=ARM_OFFENSIVE=1
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
-ExecStart=/usr/bin/python3 /home/tsoyp/ap-testbed/consent-portal/portal.py
+ExecStart=/usr/bin/python3 __AP_DIR__/consent-portal/portal.py
 Restart=on-failure
 RestartSec=3
 

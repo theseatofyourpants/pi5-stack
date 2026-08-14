@@ -9,8 +9,8 @@ BindsTo=ap-testbed-net.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/home/tsoyp/ap-testbed/hotpot/hotpot-ctl.sh start
-ExecStop=/home/tsoyp/ap-testbed/hotpot/hotpot-ctl.sh stop
+ExecStart=__AP_DIR__/hotpot/hotpot-ctl.sh start
+ExecStop=__AP_DIR__/hotpot/hotpot-ctl.sh stop
 TimeoutStartSec=300
 
 [Install]

@@ -3,7 +3,11 @@
 # Run with sudo. Idempotent. Also stops/cleans any MANUAL testbed left running.
 set -euo pipefail
 [ "$(id -u)" -eq 0 ] || { echo "run with sudo: ! sudo bash ~/ap-testbed/install-testbed.sh"; exit 1; }
-HERE=/home/tsoyp/ap-testbed
+HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+STACK_USER="$(stat -c %U "$HERE")"
+# Render __AP_DIR__/__STACK_USER__ placeholders in a payload file to stdout, so the
+# same repo installs cleanly under any user/home (not just /home/tsoyp).
+render(){ sed -e "s|__AP_DIR__|$HERE|g" -e "s|__STACK_USER__|$STACK_USER|g" "$1"; }
 
 echo "[*] Stopping any MANUAL testbed processes (from earlier hand bring-up)..."
 pkill -f "consent-portal/portal.py"        2>/dev/null || true
@@ -20,25 +24,27 @@ for IF in wlan1 wlan2 wlan3; do
   while iptables -t nat -D PREROUTING -i "$IF" -p tcp --dport 80 -j REDIRECT --to-ports 8081 2>/dev/null; do :; done
 done
 
-echo "[*] Fixing ownership (portal + admin run as tsoyp)..."
+echo "[*] Fixing ownership (portal + admin run as $STACK_USER)..."
 mkdir -p "$HERE/logs" "$HERE/state/scans"
-chown -R tsoyp:tsoyp "$HERE/logs" "$HERE/state"
+chown -R "$STACK_USER:$STACK_USER" "$HERE/logs" "$HERE/state"
 
 echo "[*] Ensuring admin console password..."
 if [ ! -s "$HERE/state/admin.pass" ]; then
   umask 077
   openssl rand -base64 18 > "$HERE/state/admin.pass"
-  chown tsoyp:tsoyp "$HERE/state/admin.pass"; chmod 600 "$HERE/state/admin.pass"
+  chown "$STACK_USER:$STACK_USER" "$HERE/state/admin.pass"; chmod 600 "$HERE/state/admin.pass"
   NEWPASS=1
 fi
 
-echo "[*] Installing systemd units..."
+echo "[*] Installing systemd units (templating user/paths for this host)..."
 install -m0644 "$HERE"/systemd/ap-testbed.target            /etc/systemd/system/
-install -m0644 "$HERE"/systemd/ap-testbed-net.service       /etc/systemd/system/
 install -m0644 "$HERE"/systemd/ap-testbed-hostapd.service   /etc/systemd/system/
 install -m0644 "$HERE"/systemd/ap-testbed-dnsmasq.service   /etc/systemd/system/
-install -m0644 "$HERE"/systemd/ap-testbed-portal.service    /etc/systemd/system/
-install -m0644 "$HERE"/systemd/ap-testbed-admin.service     /etc/systemd/system/
+# these carry __STACK_USER__ / __AP_DIR__ placeholders — render per host
+for u in ap-testbed-net ap-testbed-portal ap-testbed-admin; do
+  render "$HERE/systemd/$u.service" > "/etc/systemd/system/$u.service"
+  chmod 0644 "/etc/systemd/system/$u.service"
+done
 
 echo "[*] Installing udev rule..."
 install -m0644 "$HERE"/udev/99-ap-testbed.rules /etc/udev/rules.d/
@@ -46,12 +52,14 @@ install -m0644 "$HERE"/udev/99-ap-testbed.rules /etc/udev/rules.d/
 echo "[*] Installing per-MAC egress helper (root-owned, outside tsoyp's home)..."
 install -m0755 -o root -g root "$HERE"/apt-authorize.sh /usr/local/sbin/apt-testbed-authorize
 
-echo "[*] Installing scoped sudoers rule (validated)..."
-if visudo -cf "$HERE/sudoers.d-ap-testbed" >/dev/null 2>&1; then
-  install -m0440 -o root -g root "$HERE/sudoers.d-ap-testbed" /etc/sudoers.d/ap-testbed
+echo "[*] Installing scoped sudoers rule (templated + validated)..."
+tmp_sudoers="$(mktemp)"; render "$HERE/sudoers.d-ap-testbed" > "$tmp_sudoers"
+if visudo -cf "$tmp_sudoers" >/dev/null 2>&1; then
+  install -m0440 -o root -g root "$tmp_sudoers" /etc/sudoers.d/ap-testbed
 else
   echo "    !! sudoers file failed validation — NOT installed (SSID-apply will need manual restart)"
 fi
+rm -f "$tmp_sudoers"
 
 echo "[*] Reloading systemd + udev..."
 systemctl daemon-reload

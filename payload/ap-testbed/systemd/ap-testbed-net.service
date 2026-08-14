@@ -6,8 +6,8 @@ Before=ap-testbed-hostapd.service ap-testbed-dnsmasq.service ap-testbed-portal.s
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/home/tsoyp/ap-testbed/bringup-net.sh
-ExecStop=/home/tsoyp/ap-testbed/teardown-net.sh
+ExecStart=__AP_DIR__/bringup-net.sh
+ExecStop=__AP_DIR__/teardown-net.sh
 # Env overrides (optional): AP_SSID, AP_CHANNEL, AP_SUBNET, AP_COUNTRY
 EnvironmentFile=-/etc/ap-testbed.env
 

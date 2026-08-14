@@ -5,4 +5,4 @@
 # apt-testbed-authorize lives in root-owned /usr/local/sbin (NOT tsoyp's home) so
 # a compromise of the tsoyp account can't rewrite a root-run script.
 #   3. start/stop/restart the hot-pot deception unit (admin console toggle)
-tsoyp ALL=(root) NOPASSWD: /usr/bin/systemctl restart ap-testbed-hostapd.service, /usr/bin/systemctl restart ap-testbed-portal.service, /usr/bin/systemctl start ap-testbed.target, /usr/bin/systemctl stop ap-testbed.target, /usr/bin/systemctl restart ap-testbed.target, /usr/bin/systemctl start ap-testbed-hotpot.service, /usr/bin/systemctl stop ap-testbed-hotpot.service, /usr/bin/systemctl restart ap-testbed-hotpot.service, /usr/local/sbin/apt-testbed-authorize
+__STACK_USER__ ALL=(root) NOPASSWD: /usr/bin/systemctl restart ap-testbed-hostapd.service, /usr/bin/systemctl restart ap-testbed-portal.service, /usr/bin/systemctl start ap-testbed.target, /usr/bin/systemctl stop ap-testbed.target, /usr/bin/systemctl restart ap-testbed.target, /usr/bin/systemctl start ap-testbed-hotpot.service, /usr/bin/systemctl stop ap-testbed-hotpot.service, /usr/bin/systemctl restart ap-testbed-hotpot.service, /usr/local/sbin/apt-testbed-authorize

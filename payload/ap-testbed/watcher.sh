@@ -7,7 +7,8 @@
 # Devices NOT on the allowlist are only logged; they can still self-authorize via
 # the consent portal.
 set -euo pipefail
-BASE=/home/tsoyp/ap-testbed
+BASE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+STACK_USER="$(stat -c %U "$BASE")"
 STORE="$BASE/lib/store.py"
 LOG="$BASE/logs/joins.log"
 ACTION="${1:-}"; MAC="${2:-}"; IP="${3:-}"; HOST="${4:-}"
@@ -17,7 +18,7 @@ printf '%s %-4s mac=%s ip=%s host=%s\n' "$(date +%FT%T)" "$ACTION" "$MAC" "$IP" 
 if [ "$ACTION" = "add" ] && [ -n "$MAC" ] && [ -n "$IP" ]; then
   if python3 "$STORE" is-allowed "$MAC"; then
     if command -v runuser >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
-      runuser -l tsoyp -c "'$BASE/trigger-scan.sh' '$IP' '$MAC' allowlist" >/dev/null 2>&1 &
+      runuser -l "$STACK_USER" -c "'$BASE/trigger-scan.sh' '$IP' '$MAC' allowlist" >/dev/null 2>&1 &
     else
       "$BASE/trigger-scan.sh" "$IP" "$MAC" allowlist >/dev/null 2>&1 &
     fi
