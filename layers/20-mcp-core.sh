@@ -77,6 +77,11 @@ Description=HexStrike AI backend (:${HEXSTRIKE_PORT:-8899})
 After=network.target
 [Service]
 User=$USER
+# HOME must be set explicitly: hexstrike_server.py writes its data dir under \$HOME,
+# and systemd does not always populate HOME from User=, so it falls back to '/'
+# (-> PermissionError on /.hexstrike_data). WorkingDirectory keeps relative paths sane.
+Environment=HOME=$HOME
+WorkingDirectory=$HX
 Environment=PATH=$HOME/go/bin:$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin
 Environment=HEXSTRIKE_PORT=${HEXSTRIKE_PORT:-8899}
 ExecStart=$HX/hexstrike-env/bin/python3 $HX/hexstrike_server.py --port ${HEXSTRIKE_PORT:-8899}
