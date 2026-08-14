@@ -96,6 +96,12 @@ Description=MCP Kali Server backend (:${KALI_BACKEND_PORT:-5000})
 After=network.target
 [Service]
 User=$USER
+# PATH must include the user tool dirs: kali_server.py shells out to nuclei/httpx/
+# feroxbuster (in ~/.local/bin, ~/go/bin), which systemd's default PATH misses, so the
+# backend reports those tools "not found" even though they're installed. HOME too.
+Environment=HOME=$HOME
+WorkingDirectory=$HOME/MCP-Kali-Server
+Environment=PATH=$HOME/go/bin:$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=$HOME/MCP-Kali-Server/venv/bin/python3 $HOME/MCP-Kali-Server/kali-server/kali_server.py
 Restart=on-failure
 RestartSec=5
