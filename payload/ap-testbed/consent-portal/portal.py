@@ -259,8 +259,12 @@ def _ensure_cert():
 
 
 def _serve(bind, port, tls=False):
-    socketserver.TCPServer.allow_reuse_address = True
-    httpd = socketserver.TCPServer((bind, port), Handler)
+    # Threaded: each request gets its own thread so one slow/stuck client (e.g. a
+    # captive probe that connects but never completes) can't wedge the whole portal
+    # and stall the connection backlog. daemon_threads lets it shut down cleanly.
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    socketserver.ThreadingTCPServer.daemon_threads = True
+    httpd = socketserver.ThreadingTCPServer((bind, port), Handler)
     if tls:
         import ssl
         cert, key = _ensure_cert()

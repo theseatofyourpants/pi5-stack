@@ -111,12 +111,18 @@ fi
 # Stream JSON events through the filter so the admin UI shows live progress.
 # pipefail is on, so guard with set +e to read claude's real exit via PIPESTATUS.
 set +e
-timeout "${SCAN_TIMEOUT:-600}" "$CLAUDE_BIN" -p --dangerously-skip-permissions \
+# -k 30: if claude ignores the SIGTERM at SCAN_TIMEOUT, SIGKILL it 30s later so a
+# hung/stuck scan can never keep running (an un-reaped claude orphaned for ~2h and
+# exhausted RAM on a small VM). PIPESTATUS[0] still reflects claude's real exit.
+timeout -k 30 "${SCAN_TIMEOUT:-600}" "$CLAUDE_BIN" -p --dangerously-skip-permissions \
   --output-format stream-json --verbose "$PROMPT" \
   2>>"$SCANLOG" | python3 "$BASE/lib/stream-filter.py" >> "$SCANLOG"
 RC=${PIPESTATUS[0]}
 set -e
 [ -n "$WATCHDOG_PID" ] && kill "$WATCHDOG_PID" 2>/dev/null || true
+# Belt-and-suspenders reap: kill any claude still lingering for THIS scan. Its argv
+# carries the unique report token ($OUTBASE), so this targets only this scan's process.
+pkill -9 -f "$OUTBASE" 2>/dev/null || true
 
 if [ -f "$ABORT_FLAG" ]; then
   rm -f "$ABORT_FLAG"
