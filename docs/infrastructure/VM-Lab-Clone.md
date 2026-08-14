@@ -1,17 +1,18 @@
 ---
 title: VM Lab Clone (Kali on Apple Silicon)
 tags: [infra, replication, vm]
-status: in-progress
-updated: 2026-08-12
+status: validated
+updated: 2026-08-13
 ---
 
 # VM Lab Clone — Kali on an Apple Silicon MacBook
 
-> [!info] Selector implemented; VM not yet stood up
-> The `pi|vm` build-profile **selector is built** in the [[Replication-Guide|rebuild]]
-> (branch `feat/vm-profile`, tracks issue #1). What remains is standing up an actual
-> VM: the bring-up runbook + real-hardware validation (Mythic arm64, USB passthrough).
-> See [[Architecture-Overview]] for the live Pi stack this mirrors.
+> [!success] Built & validated on a real VM (2026-08-13)
+> The `pi|vm` selector is merged, and the **full stack installs end-to-end on a fresh
+> Kali arm64 VM** (`kalivm`) — every layer `00`–`70` (minus the Pi-only failsafe), C2 +
+> MCP + sensors + hot-pot, 9/10 MCPs green. The clean-room run found & fixed **13
+> fresh-box bugs** (see below). Only remaining: the **MT7612U USB-passthrough** test
+> (needs the dongle on the Mac). See [[Architecture-Overview]] for the Pi stack this mirrors.
 
 ## Purpose
 A Kali arm64 VM on an Apple Silicon MacBook that runs the **software + USB-hardware
@@ -135,12 +136,45 @@ signature (built-in failsafe radio + e-ink HAT).
 - [x] `90-verify.sh` profile-aware — the `wifi-failsafe` hard-check runs only on `pi`.
 - [x] `mt76`/`firmware-misc-nonfree` best-effort install in `00-core` for the dongle.
 
-**Remaining (needs a real VM):**
-- [ ] Short **VM bring-up runbook** (hypervisor, guest install, USB passthrough, `secrets.env`, `./bootstrap.sh --profile vm`).
-- [ ] Validate **Mythic arm64** per payload type on the VM.
-- [ ] Confirm **USB-passthrough stability** for the MT7612U under the chosen hypervisor.
+**Validated on `kalivm` 2026-08-13:**
+- [x] Full install: every layer `00`–`70` (minus Pi-only failsafe) installs + `./bootstrap.sh --check` passes on Kali arm64 / Python 3.14.
+- [x] **Mythic on arm64** — 8 containers healthy on 5.8 GB RAM (no OOM); mythic-mcp + caido-mcp build on arm64.
+- [x] Bring-up runbook written (below).
+- [ ] **MT7612U USB-passthrough** test — still pending the dongle on the Mac.
+
+### Fresh-box bugs found & fixed (PRs #2–#6, all merged)
+The Pi masked all of these (it already had the deps / wlan0 / Docker / working versions):
+1. `00-core` missing `cmake`/`libpq-dev`/`python3-dev` (hexstrike native deps).
+2. `ptai==1.1.0` caps at Python <3.14 → bump `1.2.1`.
+3. `install-testbed.sh` aborted on missing `wlan0` under `set -e` → `|| true`.
+4. `30-ap-testbed` hard-verified the hot-pot unit without Docker → conditional.
+5. `claude.json.tmpl` hardcoded `/home/tsoyp` → `{{HOME}}` (broke every local MCP).
+6–7. greynoise **and** kali-server MCPs pulled `mcp 2.0` (fastmcp removed) → pin `mcp<2`.
+8. Sliver `operator` needs `--permissions all` (v1.7.3).
+9. `get.docker.com` sets suite `kali-rolling` (unpublished) → Kali-native `docker.io` + compose v2 plugin.
+10–11. mythic-mcp & caido-mcp build from `./cmd/...` (not top-level); caido made non-fatal (x86-only).
+12. hexstrike backend unit missing `HOME` → `/.hexstrike_data` PermissionError.
+13. `suricata-update` not installed → zero rules; install from Kali apt.
+
+## VM bring-up runbook
+Reproduces the `kalivm` build. **~45–60 min** end to end on an M-series Mac.
+
+1. **Create the VM** (hypervisor: VMware Fusion / Parallels / UTM). Kali arm64.
+   - **Disk ≥ 64 GB** (Kali's 20 GB default fills up — the stack needs ~25 GB; growing later means swap-partition surgery). RAM **6–8 GB**, 4 vCPU.
+   - Keep the login user simple; the stack is now user-agnostic (validated under `kalivm`, not just `tsoyp`).
+2. **First boot — make Tailscale survive reboots** (the #1 gotcha): `sudo systemctl enable --now tailscaled && sudo tailscale up`. Without `enable`, `tailscaled` isn't running on boot and the node keeps dropping offline.
+3. **SSH + passwordless sudo** (for a driven install): `sudo systemctl enable --now ssh`; add your key to `~/.ssh/authorized_keys`; `echo "<user> ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/<user>-nopasswd && sudo chmod 440 …`.
+4. **Get the repo** — `rsync` from the Pi (no GitHub auth on the VM) or `git clone` the private repo. Seed a git-ignored **`secrets.env`** (`VT_API_KEY`, `GREYNOISE_API_KEY`; Mythic's is captured during layer 51).
+5. **Build** — `./bootstrap.sh --profile vm` (auto-detects `vm`; feed `yes` if non-interactive, for the preflight confirm). `--all` (or `--layers …`) for the opt-in C2/sensors/phishing/ctf/automation. Docker gets installed by layer 51.
+6. **Post-install:** restart Claude Code to load `~/.claude.json` (9/10 MCPs connect; `caido` needs the x86 laptop). Install the hot-pot once Docker's up: `sudo bash ~/ap-testbed/install-hotpot.sh`. Start sensors per [[Reboot-Runbook]].
+
+> [!note] Admin console (the "testbed link")
+> `http://<vm-tailscale-ip>:8787` — user `admin`, password in `~/ap-testbed/state/admin.pass`. Binds `0.0.0.0`, so also reachable on the VM's LAN IP.
 
 ## Open risks
+- USB-passthrough stability for the Wi-Fi dongle under the chosen hypervisor (untested).
+- Docker-in-VM resource pressure on smaller MacBooks (16 GB comfortable; 8 GB tight; Mythic ran on 5.8 GB but with little headroom).
+- `Mythic` clone: the `v3.4.0` tag checkout warned and fell back to the default branch — pin/verify the Mythic version if exact reproducibility matters.
 - Mythic arm64 payload-type coverage (verify, don't assume).
 - USB-passthrough stability for the Wi-Fi dongle under the chosen hypervisor.
 - Docker-in-VM resource pressure on smaller MacBooks (16 GB is comfortable; 8 GB is tight).
