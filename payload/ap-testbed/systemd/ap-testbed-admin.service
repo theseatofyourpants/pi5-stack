@@ -5,10 +5,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=tsoyp
+User=__STACK_USER__
 Environment=ADMIN_BIND=0.0.0.0
 Environment=ADMIN_PORT=8787
-ExecStart=/usr/bin/python3 /home/tsoyp/ap-testbed/admin/admin.py
+ExecStart=/usr/bin/python3 __AP_DIR__/admin/admin.py
 Restart=on-failure
 RestartSec=5
 

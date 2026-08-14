@@ -6,9 +6,10 @@
 # units started by ap-testbed.target after this succeeds.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
+STACK_USER="$(stat -c %U "$HERE")"
 RUN=/run/ap-testbed
 
-CFG=/home/tsoyp/ap-testbed/state/config.json
+CFG="$HERE/state/config.json"
 DONGLE_DRIVER="${DONGLE_DRIVER:-mt76x2u}"
 AP_SUBNET="${AP_SUBNET:-10.66.66}"
 
@@ -70,7 +71,7 @@ ip addr add "${AP_SUBNET}.1/24" dev "$AP_IFACE"
 sed -e "s/__IFACE__/$AP_IFACE/g" -e "s/__SSID__/$AP_SSID/g" -e "s/__CHANNEL__/$AP_CHANNEL/g" \
     -e "s/__HWMODE__/$AP_HWMODE/g" -e "s/__COUNTRY__/$AP_COUNTRY/g" \
     "$HERE/conf/hostapd.conf.template" > "$RUN/hostapd.conf"
-sed -e "s/__IFACE__/$AP_IFACE/g" -e "s/__SUBNET__/$AP_SUBNET/g" \
+sed -e "s/__IFACE__/$AP_IFACE/g" -e "s/__SUBNET__/$AP_SUBNET/g" -e "s|__AP_DIR__|$HERE|g" \
     "$HERE/conf/dnsmasq-ap.conf.template" > "$RUN/dnsmasq.conf"
 
 # 5. Walled-garden firewall (scoped to $AP_IFACE only — never affects wlan0).
@@ -81,7 +82,7 @@ AP_IFACE="$AP_IFACE" AP_SUBNET="$AP_SUBNET" UPLINK_IFACE="${UPLINK:-lo}" PORTAL_
 # make it writable by the portal user (bringup runs as root).
 SESSION_AUTH="$HERE/state/session-auth"
 : > "$SESSION_AUTH" 2>/dev/null || true
-chown tsoyp:tsoyp "$SESSION_AUTH" 2>/dev/null || true
+chown "$STACK_USER:$STACK_USER" "$SESSION_AUTH" 2>/dev/null || true
 
 # Reconcile orphaned scans: a restart kills any backgrounded scan mid-run, leaving
 # its record stuck at 'running'. Mark those whose process is gone as 'interrupted'.

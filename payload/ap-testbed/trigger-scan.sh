@@ -8,14 +8,14 @@
 # gated by config.armed AND ARM_OFFENSIVE=1 AND no logs/HALT. Scope is LOCKED to
 # the single IP; the scan is low-aggression / non-destructive; per-MAC cooldown.
 set -euo pipefail
-BASE=/home/tsoyp/ap-testbed
+BASE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 STORE="$BASE/lib/store.py"
 LOG="$BASE/logs/scans.log"
 
 # systemd/runuser give us a minimal PATH; restore the user tool dirs so `claude`
 # (and any MCP-launched tools it spawns) resolve. HOME is set by systemd (User=)
 # and by `runuser -l` (watcher path).
-export HOME="${HOME:-/home/tsoyp}"
+export HOME="${HOME:-$(dirname "$BASE")}"
 export PATH="$HOME/.local/bin:$HOME/go/bin:$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 # Resolve the claude binary explicitly (absolute path beats PATH surprises).
 CLAUDE_BIN="$HOME/.local/bin/claude"

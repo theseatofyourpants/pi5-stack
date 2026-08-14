@@ -12,7 +12,8 @@
 # attacker-URL fetch. This is what keeps the deception layer from being a pivot.
 set -uo pipefail
 
-BASE=/home/tsoyp/ap-testbed
+BASE="$(cd "$(dirname "$(readlink -f "$0")")"/.. && pwd)"
+STACK_USER="$(stat -c %U "$BASE")"
 HOTPOT="$BASE/hotpot"
 COMPOSE="$HOTPOT/docker-compose.yml"
 AP_IP=10.66.66.1
@@ -89,10 +90,10 @@ start() {
     log "AP IP $AP_IP not present (dongle out / AP down) — will start on next AP bring-up."; exit 0
   fi
   mkdir -p "$LOGS/hotpot" "$LOGS/cowrie"
-  chown -R tsoyp:tsoyp "$LOGS/hotpot" "$LOGS/cowrie" 2>/dev/null || true
+  chown -R "$STACK_USER:$STACK_USER" "$LOGS/hotpot" "$LOGS/cowrie" 2>/dev/null || true
   if [ ! -s "$BASE/state/hotpot-tokens.json" ]; then
     log "seeding honeytokens (first run)…"
-    sudo -u tsoyp python3 "$HOTPOT/seed-tokens.py" || python3 "$HOTPOT/seed-tokens.py" || true
+    sudo -u "$STACK_USER" python3 "$HOTPOT/seed-tokens.py" || python3 "$HOTPOT/seed-tokens.py" || true
   fi
   # Host sshd usually holds the 0.0.0.0:22 wildcard -> a 10.66.66.1:22 publish
   # would fail to bind. Detect and fall back to 2222 so the stack still comes up.

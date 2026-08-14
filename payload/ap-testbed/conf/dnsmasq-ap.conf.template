@@ -40,8 +40,8 @@ dhcp-option=option:dns-server,__SUBNET__.1
 # for Android 11+ / iOS 14+. Points at the RFC 8908 JSON endpoint the portal serves.
 dhcp-option=114,https://captive.theseatofyourpants.com/captive-api
 dhcp-leasefile=/run/ap-testbed/dnsmasq.leases
-dhcp-script=/home/tsoyp/ap-testbed/watcher.sh
-# Don't drop to 'nobody' — the dhcp-script logs into /home/tsoyp/ap-testbed/logs.
+dhcp-script=__AP_DIR__/watcher.sh
+# Don't drop to 'nobody' — the dhcp-script logs into __AP_DIR__/logs.
 user=root
 group=root
 log-dhcp
