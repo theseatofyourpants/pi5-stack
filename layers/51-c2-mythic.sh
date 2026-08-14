@@ -58,7 +58,10 @@ fi
 # 4. Mythic-MCP (Go build)
 log "building Mythic-MCP…"
 clone_ref "$MYTHIC_MCP_REPO" "${MYTHIC_MCP_REF:-main}" "$HOME/Mythic-MCP"
-( cd "$HOME/Mythic-MCP" && { [ -f Makefile ] && make || go build -o mythic-mcp .; } ) || warn "Mythic-MCP build failed"
+# Build the MCP binary straight from ./cmd/mythic-mcp to the path claude.json expects
+# (~/Mythic-MCP/mythic-mcp). Avoid bare `make`: its default target runs a golangci-lint
+# step we don't install, and `make build` emits to bin/ (wrong path for the MCP entry).
+( cd "$HOME/Mythic-MCP" && go build -o mythic-mcp ./cmd/mythic-mcp ) || warn "Mythic-MCP build failed"
 verify "mythic-mcp binary" test -x "$HOME/Mythic-MCP/mythic-mcp"
 
 # 5. caido-mcp-server (Go build) -> ~/.local/bin
