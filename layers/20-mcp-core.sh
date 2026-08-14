@@ -40,6 +40,10 @@ clone_ref "$KALI_MCP_REPO" "${KALI_MCP_REF:-master}" "$HOME/MCP-Kali-Server"
 for r in requirements.txt requirements.kali.txt requirements.mcp.txt; do
   [ -f "$HOME/MCP-Kali-Server/$r" ] && "$HOME/MCP-Kali-Server/venv/bin/pip" -q install -r "$HOME/MCP-Kali-Server/$r" || true
 done
+# mcp_server.py imports mcp.server.fastmcp.FastMCP; the repo leaves mcp unpinned, so
+# a fresh install pulls mcp 2.x (fastmcp removed) and the MCP fails to launch. Force 1.x.
+"$HOME/MCP-Kali-Server/venv/bin/pip" -q install "mcp<2"
+verify "kali-server MCP deps" "$HOME/MCP-Kali-Server/venv/bin/python" -c "from mcp.server.fastmcp import FastMCP"
 
 # ===== 3. hexstrike (+ backend :8899 + web tools) =====
 log "hexstrike…"
