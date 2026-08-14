@@ -111,14 +111,18 @@ fi
 # Stream JSON events through the filter so the admin UI shows live progress.
 # pipefail is on, so guard with set +e to read claude's real exit via PIPESTATUS.
 set +e
-# Scope the scan's claude to ONLY the MCP servers device-assess uses (kali-server,
-# hexstrike, wstg-pentest), built from ~/.claude.json so their paths/keys stay right.
-# Otherwise claude loads all 10 configured MCPs (Mythic's 8 containers, a Playwright
-# browser, Sliver, …) whose startup + RAM cost pushed the scan past its timeout.
-# --strict-mcp-config makes claude ignore ~/.claude.json and use only this minimal set.
+# Scope the scan's claude to the MCP servers the device-assess PIPELINE uses — not
+# just device-assess (nmap/SMB/web enum: mcp-kali-server, hexstrike, wstg-pentest) but
+# also the web-assess subagent it hands off to for any device with a web surface
+# (adds pentest-ai + playwright). This is OS-agnostic: a Windows/Mac/IoT box exercises
+# far more of this set (SMB, RDP-adjacent, web apps) than a locked-down phone does.
+# Excludes the heavy/irrelevant servers so a scan can't blow its timeout: Mythic (8
+# containers) + Sliver (C2, only lateral-move uses them), greynoise/virustotal
+# (external OSINT), and caido (x86-laptop-only; web-assess falls back to playwright +
+# raw requests without it). --strict-mcp-config makes claude use only this set.
 SCAN_MCP="$(mktemp)"; trap 'rm -f "$SCAN_MCP"' EXIT
 python3 -c 'import json,sys
-keep={"mcp-kali-server","hexstrike","wstg-pentest"}
+keep={"mcp-kali-server","hexstrike","wstg-pentest","pentest-ai","playwright"}
 d=json.load(open(sys.argv[1])).get("mcpServers",{})
 json.dump({"mcpServers":{k:v for k,v in d.items() if k in keep}}, open(sys.argv[2],"w"))' \
   "$HOME/.claude.json" "$SCAN_MCP" 2>>"$SCANLOG" || cp "$HOME/.claude.json" "$SCAN_MCP"
