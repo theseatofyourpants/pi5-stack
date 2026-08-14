@@ -75,6 +75,16 @@ Custom `~/.claude/agents/*.md` orchestrators. Index: [[Operator-Skills]]
 | CTF | [[CTF-Toolkit]] | ctf-triage/pwn/rev/forensics · nudge · andxor-ctf · refs: [[AND-XOR-5n4ck3y]], [[AND-XOR-Hardware-Gear]] |
 | Ops / meta | [[Stack-Ops-Skills]] | mcp-doctor · add-mcp · stack-restore · vault-sync · pi5-stack-sync |
 
+### 🔴🔵 Capability expansion (2026-08-14)
+4 new, on the [[mcp-hexstrike|extended offensive toolset]]:
+
+| Area | New | Covers |
+|------|-----|--------|
+| Cloud/container | [[cloud-audit]] | prowler · scout-suite · checkov/terrascan · trivy · kube-bench/kube-hunter |
+| Blue — supply chain | [[container-hygiene]] | trivy-scan the stack's own Mythic/hot-pot images |
+| Red — people OSINT | [[identity-osint]] | sherlock · social-analyzer · shodan/censys (scope-gated) |
+| Recon — continuous | [[Attack-Surface-Monitor\|attack-surface-monitor]] | scheduled external surface-diff |
+
 ## 🏗️ Infrastructure
 
 - [[C2-Primer]] — **how Sliver & Mythic actually work** (session vs beacon, listeners, agents, pivoting) — start here if C2 is new

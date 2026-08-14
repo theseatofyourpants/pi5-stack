@@ -57,5 +57,16 @@ Split by mechanism: **agents** (`~/.claude/agents/`, autonomous, `/operation`-ch
 
 These extended [[operation]] into a full end-to-end kill chain: recon → [[web-assess]]/[[phish-sim]] → [[generate-payload]] → the [[Post-Exploitation]] loop → blue → [[debrief]].
 
+## 2026-08-14 toolset expansion (4 new)
+
+Built on the [[mcp-hexstrike|extended offensive toolset]] (bin-exploit/cloud/web/recon/creds). Installing those tools also *re-armed* the ones already declared in [[web-assess]], `ad-attack`, and `ctf-pwn` — they finally run.
+
+| Area | New | Covers |
+|------|-----|--------|
+| Cloud/container | [[cloud-audit]] | prowler · scout-suite · checkov/terrascan · trivy/docker-bench · kube-bench/kube-hunter — the domain the suite lacked |
+| Blue — supply chain | [[container-hygiene]] | trivy-scan the stack's OWN [[Mythic-Server\|Mythic]] + [[Adversarial-Honeypot-Hotpot\|hot-pot]] images + Cowrie pin drift |
+| Red — people OSINT | [[identity-osint]] | sherlock/social-analyzer/shodan/censys — scope-gated identity dossiers → [[phish-sim]] |
+| Recon — continuous | [[Attack-Surface-Monitor\|attack-surface-monitor]] | scheduled bbot/shodan/nuclei external-surface diffing |
+
 ## The red → blue loop
 Skills 1–5 are offensive (now with the full [[Post-Exploitation]] chain + [[phish-sim]] front door); 6–8 turn that activity into detections and a client report — and [[Blue-Team-Tools|threat-hunt]] actively hunts the TTPs the offensive phases ran. [[triage-alerts]] and [[detection-engineer]] both read the [[Network-Sensors|Suricata/Zeek]] logs, [[triage-alerts]] now adds [[mcp-greynoise|GreyNoise]] noise-vs-targeted context, and [[debrief]] folds the [[Detection-Library]] coverage into the final report. [[web-assess]] closed the exploitation gap that used to sit between recon and post-ex. This loop is the whole point of the build — see [[Architecture-Overview]].
