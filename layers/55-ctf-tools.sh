@@ -17,6 +17,12 @@ as_root apt-get install -y \
 log "building ztools (infodump/txd — not apt-installable)…"
 bash "$STACK_ROOT/payload/scripts/install-ztools.sh" || warn "ztools build had issues — see output above"
 
+# Broaden the hexstrike/offensive toolset: bin-exploit/pwn, cloud/container, web-app,
+# recon/OSINT, creds. Long (~20-30 min), idempotent + graceful; skips GUI/licensed/
+# kernel tools (burpsuite, maltego, falco, clair).
+log "installing extended offensive toolset (hexstrike-tools.sh)…"
+as_root bash "$STACK_ROOT/payload/scripts/hexstrike-tools.sh" || warn "extended toolset had issues — see output above"
+
 verify "dfrotz present"   bash -lc 'command -v dfrotz'
 verify "infodump present" bash -lc 'command -v infodump'
 verify "multimon-ng"      bash -lc 'command -v multimon-ng'
