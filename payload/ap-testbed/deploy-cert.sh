@@ -3,8 +3,8 @@
 # consent portal (runs as tsoyp) can read it, then reloads the portal. Runs as root
 # (by certbot) on initial issuance AND every auto-renewal.
 set -euo pipefail
-DOMAIN="${CAPTIVE_DOMAIN:-captive.theseatofyourpants.com}"
-SRC="/etc/letsencrypt/live/$DOMAIN"
+DOMAIN="${CAPTIVE_DOMAIN:-blackholeroute.com}"
+SRC="${RENEWED_LINEAGE:-/etc/letsencrypt/live/$DOMAIN}"
 BASE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 STACK_USER="$(stat -c %U "$BASE")"
 DEST="$BASE/state"

@@ -96,7 +96,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         meta = '<meta http-equiv="refresh" content="5">' if refresh else ''
         return """<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">%s
-<title>%s — Security by The Seat of Your Pants</title>
+<title>%s — Security by Black Hole Route</title>
 <style>
  body{margin:0;background:#0f1216;color:#e8ecf1;font:16px/1.6 system-ui,-apple-system,sans-serif}
  .wrap{max-width:44rem;margin:0 auto;padding:22px 18px 64px}
@@ -114,9 +114,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
  .btn{display:inline-block;background:#ffb02e;color:#1a1200;font-weight:700;padding:11px 18px;border-radius:10px;text-decoration:none}
  .muted{color:#8b95a3;font-size:.88rem}
 </style></head><body><div class="wrap">
- <div class="brand">Security by <b>The Seat of Your Pants</b></div>
+ <div class="brand">Security by <b>Black Hole Route</b></div>
  <span class="tag">Open Security Test</span><h1>%s</h1>%s
- <p class="foot">🛡️ <a href="https://who.theseatofyourpants.com">who.theseatofyourpants.com</a></p>
+ <p class="foot">🛡️ Authorized lab testing — devices on this AP only</p>
 </div></body></html>""" % (meta, html.escape(title), html.escape(title), body)
 
     def _render_report(self, rec):

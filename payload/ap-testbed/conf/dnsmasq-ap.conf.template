@@ -31,14 +31,14 @@ address=/report.test/__SUBNET__.1
 # Captive-portal API domain -> the portal. Real (Let's Encrypt) cert is served on
 # :443 for this name, so RFC 8908 clients trust it and fetch the API. Hijacked here
 # so it always resolves to the local portal, on any client.
-address=/captive.theseatofyourpants.com/__SUBNET__.1
+address=/consent.blackholeroute.com/__SUBNET__.1
 # DHCP pool on the walled-garden subnet.
 dhcp-range=__SUBNET__.50,__SUBNET__.150,255.255.255.0,1h
 dhcp-option=option:router,__SUBNET__.1
 dhcp-option=option:dns-server,__SUBNET__.1
 # RFC 8910 Captive-Portal API (DHCP option 114) — modern positive captive signal
 # for Android 11+ / iOS 14+. Points at the RFC 8908 JSON endpoint the portal serves.
-dhcp-option=114,https://captive.theseatofyourpants.com/captive-api
+dhcp-option=114,https://consent.blackholeroute.com/captive-api
 dhcp-leasefile=/run/ap-testbed/dnsmasq.leases
 dhcp-script=__AP_DIR__/watcher.sh
 # Don't drop to 'nobody' — the dhcp-script logs into __AP_DIR__/logs.
