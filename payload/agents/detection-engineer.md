@@ -8,11 +8,11 @@ tools:
   - Bash
   - Read
   - Write
-  - mcp__virustotal__analyze_file
-  - mcp__virustotal__analyze_url
-  - mcp__virustotal__analyze_domain
-  - mcp__virustotal__analyze_ip_address
-  - mcp__virustotal__get_file_behavior
+  - mcp__virustotal__get_file_report
+  - mcp__virustotal__get_url_report
+  - mcp__virustotal__get_domain_report
+  - mcp__virustotal__get_ip_report
+  - mcp__virustotal__get_file_behaviour_summary
   - mcp__mythic__mythic_login
   - mcp__mythic__mythic_is_authenticated
   - mcp__mythic__mythic_get_attack_technique_by_tnum

@@ -11,9 +11,9 @@ tools:
   - mcp__greynoise__greynoise_context_ip
   - mcp__greynoise__greynoise_community_ip
   - mcp__greynoise__greynoise_gnql
-  - mcp__virustotal__analyze_ip_address
-  - mcp__virustotal__analyze_file
-  - mcp__virustotal__analyze_domain
+  - mcp__virustotal__get_ip_report
+  - mcp__virustotal__get_file_report
+  - mcp__virustotal__get_domain_report
   - mcp__claude_ai_Huntress_MCP__list_signals
   - mcp__claude_ai_Huntress_MCP__get_signal
   - mcp__claude_ai_Huntress_MCP__list_incident_reports

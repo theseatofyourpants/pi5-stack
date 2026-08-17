@@ -18,7 +18,7 @@ tools:
   - mcp__hexstrike__bugbounty_osint_gathering
   - mcp__hexstrike__analyze_target_intelligence
   - mcp__greynoise__greynoise_context_ip
-  - mcp__virustotal__analyze_domain
+  - mcp__virustotal__get_domain_report
   - mcp__wstg-pentest__log_finding
 ---
 

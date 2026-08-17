@@ -11,9 +11,9 @@ tools:
   - mcp__claude_ai_Gmail__get_message
   - mcp__claude_ai_Gmail__list_labels
   - mcp__claude_ai_Gmail__apply_sensitive_message_label
-  - mcp__virustotal__analyze_url
-  - mcp__virustotal__analyze_file
-  - mcp__virustotal__analyze_domain
+  - mcp__virustotal__get_url_report
+  - mcp__virustotal__get_file_report
+  - mcp__virustotal__get_domain_report
   - mcp__greynoise__greynoise_context_ip
   - mcp__greynoise__greynoise_community_ip
 ---
