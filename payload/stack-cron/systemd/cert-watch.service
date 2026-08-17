@@ -1,0 +1,12 @@
+[Unit]
+Description=CT-log hygiene + certificate expiry monitor for the lab domain
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tsoyp
+Group=tsoyp
+Environment=HOME=/home/tsoyp
+ExecStart=/home/tsoyp/stack-cron/cert-watch.sh
+TimeoutStartSec=600

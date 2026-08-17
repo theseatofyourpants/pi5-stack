@@ -1,0 +1,14 @@
+[Unit]
+Description=Run cert-watch daily at 08:00 (and shortly after boot)
+
+[Timer]
+OnBootSec=6min
+OnCalendar=*-*-* 08:00:00
+# Catch up if the Pi was off at 08:00 — a missed CT check is a missed leak.
+Persistent=true
+# crt.sh rate-limits; stagger so we are not hammering it on the same second daily.
+RandomizedDelaySec=900
+Unit=cert-watch.service
+
+[Install]
+WantedBy=timers.target
