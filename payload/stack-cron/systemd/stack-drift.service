@@ -1,0 +1,12 @@
+[Unit]
+Description=Detect ap-testbed payload drift across repo, Pi, and VM
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tsoyp
+Group=tsoyp
+Environment=HOME=/home/tsoyp
+ExecStart=/home/tsoyp/stack-cron/stack-drift.sh
+TimeoutStartSec=600

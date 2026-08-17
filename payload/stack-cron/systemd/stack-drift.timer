@@ -1,0 +1,12 @@
+[Unit]
+Description=Run stack-drift daily at 08:30 (after cert-watch)
+
+[Timer]
+OnBootSec=9min
+OnCalendar=*-*-* 08:30:00
+# Catch up after downtime — drift that appeared while the Pi was off still matters.
+Persistent=true
+Unit=stack-drift.service
+
+[Install]
+WantedBy=timers.target
