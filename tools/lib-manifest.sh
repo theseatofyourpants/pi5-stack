@@ -143,6 +143,14 @@ mf_map() { # <label> <home>
   done < <(cd "$PAYLOAD" && find . -type f -printf '%P\n' | sort)
 }
 
+# Normalise an octal mode for comparison. `stat -c %a` prints 644 while a manifest
+# naturally reads 0644, and comparing those as strings reports a mismatch on every
+# run for every file with an explicit MODE. Interpret both as octal and re-pad.
+mf_norm_mode() { # <mode>
+  [ "$1" = "-" ] && { echo "-"; return; }
+  printf '%04o' "$((8#$1))" 2>/dev/null || echo "$1"
+}
+
 # --- rendering ---------------------------------------------------------------
 # The repo copy is the canonical form. 'render' turns it into what a given host
 # should hold; 'unrender' turns a host copy back into canonical form. They must be

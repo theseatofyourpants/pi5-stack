@@ -99,9 +99,10 @@ for LABEL in $(mf_host_labels); do
     fi
     # tar preserves modes, so an explicitly-specified mode is checkable here.
     if [ "$mode" != "-" ]; then
-      actual="$(stat -c %a "$host_f")"
-      if [ "$actual" != "$mode" ]; then
-        log "[DRIFT] $LABEL wrong mode: $hp is $actual, should be $mode"
+      actual="$(mf_norm_mode "$(stat -c %a "$host_f")")"
+      want="$(mf_norm_mode "$mode")"
+      if [ "$actual" != "$want" ]; then
+        log "[DRIFT] $LABEL wrong mode: $hp is $actual, should be $want"
         host_drift=$((host_drift+1))
       fi
     fi

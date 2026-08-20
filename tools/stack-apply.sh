@@ -105,7 +105,7 @@ for LABEL in $(mf_host_labels); do
     # mode is inert, and comparing only bytes would report it as already applied.
     if [ -f "$host_f" ] && cmp -s "$TMP/want" "$host_f"; then
       [ "$mode" = "-" ] && continue
-      [ "$(stat -c %a "$host_f")" = "$mode" ] && continue
+      [ "$(mf_norm_mode "$(stat -c %a "$host_f")")" = "$(mf_norm_mode "$mode")" ] && continue
       verb="chmod "
     fi
 
