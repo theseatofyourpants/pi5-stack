@@ -36,6 +36,28 @@ Repo: `~/pi5-stack` (branch `main`, remote `origin` = private GitHub `theseatofy
    git push origin main && git log --oneline -1
    ```
 
+## Day-2: keeping the live hosts in sync
+
+`bootstrap.sh` builds a box from nothing. It is NOT the tool for pushing a change to
+a box that already exists — its layers apt-install and re-clone live repos. Use
+`tools/`, which touches files only and reads every host-specific rule from
+`manifest.conf` (the one place that knowledge lives):
+
+```bash
+tools/stack-drift.sh                       # compare repo vs every reachable host
+tools/stack-apply.sh   --host pi           # dry run: what would change on the Pi
+tools/stack-apply.sh   --host vm --apply   # push repo -> host, rendered per host
+tools/stack-promote.sh --host pi --apply <payload-path>   # pull host -> repo
+```
+
+The normal loop for new tooling: **write it live on the Pi → `stack-promote` →
+secret-scan + commit (this skill) → `stack-apply --host vm`.** `stack-drift` tells
+you if a step was skipped; it runs daily at 08:30 and exits non-zero on drift.
+
+When you add a file to `payload/`, add a rule for it to `manifest.conf` in the same
+commit, or drift will report it as having no rule. A file that a host renders needs
+`RENDER`; runtime state needs `OWNER host` so it is never compared.
+
 ## Notes
 - Commit/push only on the operator's go — pushing is an outward-facing publish to the private remote.
 - The repo is edited **in place**; `.claude/settings.json` there sets `worktree.bgIsolation=none`. If a guard blocks a write mid-session, write to a scratch path and `mv` into the repo.

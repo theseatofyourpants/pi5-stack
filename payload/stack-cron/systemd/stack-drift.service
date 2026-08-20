@@ -1,5 +1,5 @@
 [Unit]
-Description=Detect ap-testbed payload drift across repo, Pi, and VM
+Description=Detect payload drift between the pi5-stack repo and every live host
 After=network-online.target
 Wants=network-online.target
 
@@ -8,5 +8,5 @@ Type=oneshot
 User=tsoyp
 Group=tsoyp
 Environment=HOME=/home/tsoyp
-ExecStart=/home/tsoyp/stack-cron/stack-drift.sh
+ExecStart=/home/tsoyp/pi5-stack/tools/stack-drift.sh
 TimeoutStartSec=600

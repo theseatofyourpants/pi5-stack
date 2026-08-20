@@ -205,8 +205,25 @@ secrets.example.env   secrets template (real one is git-ignored)
 lib/                  common.sh (helpers) + preflight.sh
 layers/               00..90 layer scripts
 payload/              scrubbed source copied into place (ap-testbed, agents, wifi-failsafe, greynoise-mcp, claude.json.tmpl)
+manifest.conf         the deployment contract: where each payload file goes, who owns it, how it renders
+tools/                day-2 lifecycle (files only, never apt/clone): stack-apply, stack-promote, stack-drift
 docs/                 the pi_design Obsidian vault (architecture reference)
 ```
+
+### Day-0 vs day-2
+`bootstrap.sh` builds a box from nothing. `tools/` keeps boxes that already exist in
+step with the repo — it touches files only, so it is safe to run against the live Pi,
+which the layers are not. Both read the same `payload/`, and every host-specific rule
+(destination, ownership, rendering, per-host scope) comes from `manifest.conf` alone.
+
+```
+tools/stack-drift.sh                        compare repo vs every reachable host
+tools/stack-apply.sh   --host vm --apply    push  repo -> host, rendered per host
+tools/stack-promote.sh --host pi --apply P  pull  host -> repo, round-trip verified
+```
+The loop for new tooling: write it live on the Pi, `stack-promote` it into the repo,
+commit, `stack-apply` it to the VM. `stack-drift` runs daily and exits non-zero if a
+step was skipped.
 
 ## Status
 **All 9 layers implemented.** `bootstrap.sh` (default + `--all`), `versions.env`
