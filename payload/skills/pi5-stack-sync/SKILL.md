@@ -1,6 +1,6 @@
 ---
 name: pi5-stack-sync
-description: Keep the ~/pi5-stack rebuild repo current — reflect stack changes into the right layer script / payload template / versions.env pin, mirror the pi_design vault into docs/, run a secret-scan gate, then commit (conventional-commit style) and push to the private GitHub remote. Use after any change that should survive a fresh-box rebuild. Pairs with vault-sync.
+description: Keep the ~/pi5-stack rebuild repo current, and keep the live hosts (Pi + Kali VM) in step with it via tools/stack-apply, stack-promote and stack-drift. Reflect stack changes into the right layer script / payload template / versions.env pin, add a manifest.conf rule for any new payload file, mirror the pi_design vault into docs/, run a secret-scan gate, then commit and push. Use after any change that should survive a fresh-box rebuild, or to push/pull a change between the Pi and the VM. Pairs with vault-sync.
 ---
 
 # pi5-stack-sync — update, commit, and push the rebuild repo
