@@ -111,6 +111,18 @@ UNIT
 as_root systemctl daemon-reload
 as_root systemctl enable --now hexstrike-backend.service kali-server-backend.service || warn "backend services didn't start cleanly — check journalctl"
 
+# ===== lab-guard: close what we just opened =====
+# Both backends bind 0.0.0.0 and answer with NO AUTHENTICATION, and neither takes a
+# bind argument (kali_server.py hardcodes app.run(host="0.0.0.0")). On any network
+# that is not a dedicated lab segment that is an unauthenticated RCE surface for
+# every other device on the LAN. The layer that opens the ports closes them.
+log "installing lab-guard (confine control plane to loopback + tailnet)…"
+as_root install -m0755 -o root -g root "$STACK_ROOT/payload/lab-guard/lab-guard.sh" /usr/local/sbin/lab-guard
+as_root install -m0644 -o root -g root "$STACK_ROOT/payload/lab-guard/lab-guard.service" /etc/systemd/system/
+as_root systemctl daemon-reload
+as_root systemctl enable --now lab-guard.service || warn "lab-guard did not apply — control-plane ports are LAN-reachable"
+verify "lab-guard active" bash -c 'sudo -n iptables -n -L LABGUARD >/dev/null 2>&1 || systemctl is-active --quiet lab-guard.service' 
+
 # --- verify (soft on the backends: they can take a moment to bind) ---
 sleep 5
 if bash -lc 'ss -tln 2>/dev/null | grep -q :'"${HEXSTRIKE_PORT:-8899}"; then ok "hexstrike backend listening :${HEXSTRIKE_PORT:-8899}"; else warn "hexstrike backend not listening yet — check: journalctl -u hexstrike-backend"; fi

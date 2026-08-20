@@ -1,0 +1,13 @@
+[Unit]
+Description=Confine the lab control plane to loopback and the tailnet
+# Must run after Docker, or the DOCKER-USER chain does not exist yet and the
+# container-published ports are left unguarded until the next manual run.
+After=network-online.target docker.service tailscaled.service
+Wants=network-online.target
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/lab-guard apply
+ExecStop=/usr/local/sbin/lab-guard remove
+[Install]
+WantedBy=multi-user.target
