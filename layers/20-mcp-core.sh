@@ -71,45 +71,29 @@ npx -y playwright install chromium >/dev/null 2>&1 || warn "playwright browser i
 
 # ===== backends as systemd (survive reboot) =====
 log "installing backend systemd units (hexstrike :${HEXSTRIKE_PORT:-8899}, kali-server :${KALI_BACKEND_PORT:-5000})…"
-as_root tee /etc/systemd/system/hexstrike-backend.service >/dev/null <<UNIT
-[Unit]
-Description=HexStrike AI backend (:${HEXSTRIKE_PORT:-8899})
-After=network.target
-[Service]
-User=$USER
-# HOME must be set explicitly: hexstrike_server.py writes its data dir under \$HOME,
-# and systemd does not always populate HOME from User=, so it falls back to '/'
-# (-> PermissionError on /.hexstrike_data). WorkingDirectory keeps relative paths sane.
-Environment=HOME=$HOME
-WorkingDirectory=$HX
-Environment=PATH=$HOME/go/bin:$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin
-Environment=HEXSTRIKE_PORT=${HEXSTRIKE_PORT:-8899}
-ExecStart=$HX/hexstrike-env/bin/python3 $HX/hexstrike_server.py --port ${HEXSTRIKE_PORT:-8899}
-Restart=on-failure
-RestartSec=5
-[Install]
-WantedBy=multi-user.target
-UNIT
-as_root tee /etc/systemd/system/kali-server-backend.service >/dev/null <<UNIT
-[Unit]
-Description=MCP Kali Server backend (:${KALI_BACKEND_PORT:-5000})
-After=network.target
-[Service]
-User=$USER
-# PATH must include the user tool dirs: kali_server.py shells out to nuclei/httpx/
-# feroxbuster (in ~/.local/bin, ~/go/bin), which systemd's default PATH misses, so the
-# backend reports those tools "not found" even though they're installed. HOME too.
-Environment=HOME=$HOME
-WorkingDirectory=$HOME/MCP-Kali-Server
-Environment=PATH=$HOME/go/bin:$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin
-ExecStart=$HOME/MCP-Kali-Server/venv/bin/python3 $HOME/MCP-Kali-Server/kali-server/kali_server.py
-Restart=on-failure
-RestartSec=5
-[Install]
-WantedBy=multi-user.target
-UNIT
+# From payload, not heredocs. These were the only units in the stack that stack-drift
+# could not see, because a heredoc inside a layer is not a file the manifest can
+# compare — and three different generations of kali-server's unit accumulated across
+# the Pi and the VM under two different NAMES as a result.
+# Canonical name is kali-server.service: it is what mcp-doctor, add-mcp and the
+# reboot runbook all reference. The old kali-server-backend.service is retired here,
+# or an in-place re-run leaves two enabled units fighting over :5000.
+U="$(id -un)"; G="$(id -gn)"
+for unit in "$STACK_ROOT"/payload/mcp-backends/*.service; do
+  sed -e "s#/home/tsoyp#$HOME#g" -e "s#User=tsoyp#User=$U#g" -e "s#Group=tsoyp#Group=$G#g" "$unit" \
+    | as_root tee "/etc/systemd/system/$(basename "$unit")" >/dev/null
+done
+if [ -e /etc/systemd/system/kali-server-backend.service ]; then
+  log "retiring superseded kali-server-backend.service…"
+  as_root systemctl disable --now kali-server-backend.service 2>/dev/null || true
+  as_root rm -rf /etc/systemd/system/kali-server-backend.service \
+                 /etc/systemd/system/kali-server-backend.service.d
+fi
+# Drop-ins existed only to patch what the old unit bodies were missing; everything
+# they supplied is inline now, and a stale one would silently override it.
+as_root rm -rf /etc/systemd/system/kali-server.service.d
 as_root systemctl daemon-reload
-as_root systemctl enable --now hexstrike-backend.service kali-server-backend.service || warn "backend services didn't start cleanly — check journalctl"
+as_root systemctl enable --now hexstrike-backend.service kali-server.service || warn "backend services didn't start cleanly — check journalctl"
 
 # ===== lab-guard: close what we just opened =====
 # Both backends bind 0.0.0.0 and answer with NO AUTHENTICATION, and neither takes a

@@ -1,0 +1,38 @@
+[Unit]
+Description=MCP Kali Server backend (Flask API for the mcp-kali-server MCP)
+Documentation=https://github.com/Wh0am123/MCP-Kali-Server
+# network-online, not network: the API binds a socket and the MCP client connects
+# per request, so starting before the network is configured just burns restarts.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tsoyp
+Group=tsoyp
+WorkingDirectory=/home/tsoyp/MCP-Kali-Server
+# HOME and PATH are BOTH required and both belong inline. Three generations of this
+# unit existed across the Pi and the VM, and each live host had a hand-made drop-in
+# supplying whatever its unit body was missing. Everything needed is here so no
+# drop-in is required on any host.
+#   HOME — systemd does not reliably populate it from User=, and the backend writes
+#          under $HOME; without it, it falls back to '/' and fails on permissions.
+#   PATH — kali_server.py shells out to nuclei/httpx/feroxbuster, which live in
+#          ~/.local/bin and ~/go/bin. systemd's default PATH misses them and the
+#          backend then reports installed tools as "not found".
+Environment=HOME=/home/tsoyp
+Environment=PATH=/home/tsoyp/go/bin:/home/tsoyp/.local/bin:/home/tsoyp/.cargo/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/tsoyp/MCP-Kali-Server/venv/bin/python3 /home/tsoyp/MCP-Kali-Server/kali-server/kali_server.py
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=60
+# Blocks privilege gain via setuid/file capabilities on exec. Verified safe here:
+# kali_server.py's only 'sudo' occurrences are log-message text in an unused --test
+# path, and nmap/masscan/tcpdump carry no file capabilities on this stack.
+# CAUTION: if anyone later runs `setcap cap_net_raw+ep` on nmap to allow SYN scans
+# as non-root, this line silently prevents it from taking effect. Remove it
+# deliberately in that case rather than debugging why nmap fell back to connect().
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

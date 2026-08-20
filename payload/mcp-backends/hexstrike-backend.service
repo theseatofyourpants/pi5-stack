@@ -1,0 +1,27 @@
+[Unit]
+Description=HexStrike AI backend (:8899)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tsoyp
+Group=tsoyp
+WorkingDirectory=/home/tsoyp/hexstrike-ai-community-edition
+# HOME must be explicit: hexstrike_server.py writes its data dir under $HOME, and
+# without it systemd falls back to '/' -> PermissionError on /.hexstrike_data and the
+# service crash-loops on boot. PATH gives it the user tool dirs.
+Environment=HOME=/home/tsoyp
+Environment=PATH=/home/tsoyp/go/bin:/home/tsoyp/.local/bin:/home/tsoyp/.cargo/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HEXSTRIKE_PORT=8899
+ExecStart=/home/tsoyp/hexstrike-ai-community-edition/hexstrike-env/bin/python3 /home/tsoyp/hexstrike-ai-community-edition/hexstrike_server.py --port 8899
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=60
+# Parity with kali-server. Verified safe: hexstrike_server.py contains no sudo
+# invocations, and none of the tools it drives rely on file capabilities here.
+# Same caution about setcap applies.
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
