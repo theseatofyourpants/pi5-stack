@@ -92,3 +92,23 @@ detect_profile(){ if have_builtin_wifi; then echo pi; else echo vm; fi; }
 : "${PROFILE:=auto}"
 [ "$PROFILE" = auto ] && PROFILE="$(detect_profile)"
 export PROFILE
+
+# Resolve an ABSOLUTE npx path, installing a provider if there is none. The two
+# node-based MCP servers (virustotal, playwright) are spawned by Claude Code with a
+# minimal environment, so a bare "npx" that happens to work in an interactive shell
+# is not sufficient — and on Kali the nodejs package ships corepack shims WITHOUT
+# putting npm or npx on PATH at all.
+ensure_npx() {
+  local p
+  p="$(command -v npx 2>/dev/null)" && { echo "$p"; return 0; }
+  for p in /usr/share/nodejs/corepack/shims/npx /usr/lib/node_modules/corepack/shims/npx; do
+    [ -x "$p" ] && { echo "$p"; return 0; }
+  done
+  if command -v corepack >/dev/null 2>&1; then
+    as_root corepack enable >/dev/null 2>&1 || true
+    p="$(command -v npx 2>/dev/null)" && { echo "$p"; return 0; }
+  fi
+  as_root apt-get install -y npm >/dev/null 2>&1 || true
+  p="$(command -v npx 2>/dev/null)" && { echo "$p"; return 0; }
+  return 1
+}

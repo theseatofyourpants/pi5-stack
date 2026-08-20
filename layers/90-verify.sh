@@ -12,7 +12,13 @@ soft(){ local d="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$d"; else warn "$
 hr; log "STACK VERIFY"; log "profile: $PROFILE   arch: $ARCH"; hr
 
 log "— core —"
+chk "claude CLI present"              bash -lc 'command -v claude >/dev/null || test -x "$HOME/.local/bin/claude"'
 chk "operator skills (device-assess)" test -f "$HOME/.claude/agents/device-assess.md"
+chk "MCP npx path is absolute+exec"   python3 -c "
+import json,os,sys
+d=json.load(open(os.path.expanduser('~/.claude.json')))['mcpServers']
+bad=[n for n,v in d.items() if v.get('command','').endswith('npx') and not os.access(v['command'],os.X_OK)]
+sys.exit(1 if bad else 0)"
 chk "~/.claude.json mcpServers"        python3 -c "import json;assert json.load(open('$HOME/.claude.json'))['mcpServers']"
 chk "hostapd"  command -v hostapd
 chk "dnsmasq"  command -v dnsmasq

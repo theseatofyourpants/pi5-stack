@@ -18,11 +18,14 @@ Repo: `~/pi5-stack` (branch `main`, remote `origin` = private GitHub `theseatofy
    ```bash
    cd ~/pi5-stack
    git add -A
-   # fail the commit if a real secret slipped in (keys, passwords, tokens, the ignored secrets file)
-   git diff --cached | grep -nEi 'VIRUSTOTAL_API_KEY"?\s*[:=]\s*"?[A-Za-z0-9]{20}|GREYNOISE_API_KEY"?\s*[:=]\s*"?[A-Za-z0-9]{20}|MYTHIC_PASSWORD|gh[pous]_[A-Za-z0-9]{20}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY' \
-     && { echo "ABORT: secret detected — unstage and replace with {{PLACEHOLDER}}"; exit 1; }
-   git ls-files --cached | grep -qx 'secrets.env' && { echo "ABORT: secrets.env is tracked"; exit 1; }
+   tools/secret-scan.sh            # exits 1 and refuses the commit if a secret is staged
    ```
+   The gate lives in `tools/secret-scan.sh` rather than inline here, because a regex
+   pasted in a doc cannot be tested and this one was wrong in both directions: it
+   scanned the whole diff (matching unchanged context) and matched bare variable
+   NAMES, so `: "${MYTHIC_PASSWORD:=}"` blocked commits while contributing no risk.
+   Run `tools/secret-scan.sh --self-test` after changing it — it asserts six known
+   leak shapes are caught and five decoys are ignored.
    Payload configs must use `{{PLACEHOLDER}}`, not live values. If the gate trips, fix it before proceeding — a leaked key in git history is the worst outcome here.
 3b. **Sanity-check scripts** you touched: `bash -n layers/*.sh lib/*.sh` (syntax) before committing.
 4. **Commit (conventional-commit style).** Match the repo's history: `feat(scope): …`, `docs(scope): …`, `fix(scope): …`. One logical change per commit; describe what a fresh-box rebuild now gets.

@@ -1,9 +1,26 @@
 #!/usr/bin/env bash
-# layers/10-skills.sh — operator skills to ~/.claude/agents and render the
-# mcpServers block of ~/.claude.json from claude.json.tmpl + secrets. Merges into
-# any existing ~/.claude.json (never clobbers Claude Code's other state).
+# layers/10-skills.sh — install Claude Code, deploy the operator agents/skills into
+# ~/.claude/, and render the mcpServers block of ~/.claude.json from
+# claude.json.tmpl + secrets. Merges into any existing ~/.claude.json (never
+# clobbers Claude Code's other state).
 set -euo pipefail
 source "$STACK_ROOT/lib/common.sh"
+source "$STACK_ROOT/versions.env" 2>/dev/null || true   # CLAUDE_CODE_VERSION
+
+# 0. Claude Code itself. Everything else in this layer — and the headless
+# stack-status / triage-alerts timers from 70-automation — is inert without it.
+# The rebuild used to assume it was already on the box and only prompted for login.
+CLAUDE_BIN="$HOME/.local/bin/claude"
+if [ -x "$CLAUDE_BIN" ] || command -v claude >/dev/null 2>&1; then
+  ok "Claude Code already installed: $(claude --version 2>/dev/null || "$CLAUDE_BIN" --version)"
+else
+  log "installing Claude Code (${CLAUDE_CODE_VERSION:-latest})…"
+  # Deliberately NOT as_root: the installer puts everything under $HOME and refuses
+  # to run under sudo, which would land the binary in /root/.local/bin.
+  curl -fsSL https://claude.ai/install.sh | bash -s -- "${CLAUDE_CODE_VERSION:-latest}" \
+    || die "Claude Code install failed — agents, skills and the headless timers all need it"
+  ok "Claude Code installed: $("$CLAUDE_BIN" --version 2>/dev/null || echo unknown)"
+fi
 
 # 1. operator agents (autonomous, /operation-chainable)
 mkdir -p "$HOME/.claude/agents"
@@ -22,6 +39,15 @@ require_secret VT_API_KEY        "VirusTotal API key (virustotal MCP; blank = it
 require_secret GREYNOISE_API_KEY "GreyNoise API key (OPTIONAL — greynoise MCP works keyless)"
 : "${CAIDO_URL:=http://127.0.0.1:8080}";  export CAIDO_URL
 : "${MYTHIC_PASSWORD:=}";                 export MYTHIC_PASSWORD
+
+# The virustotal and playwright MCP servers are spawned by Claude Code with a
+# minimal environment, so the template carries an ABSOLUTE npx path rather than a
+# bare "npx". On this stack npm is not installed at all and npx comes from Debian's
+# corepack shims, which are not on PATH — a bare "npx" would leave both servers
+# dead, and virustotal backs nine of the operator agents.
+NPX_BIN="$(ensure_npx)" || warn "no npx found — the virustotal and playwright MCP servers will not start"
+: "${NPX_BIN:=npx}"; export NPX_BIN
+log "npx resolved to: $NPX_BIN"
 
 # 3. render the template (substitute {{VARS}} from env) and validate JSON
 rendered="$(mktemp)"
@@ -54,6 +80,9 @@ stop_for_manual "Claude Code login" \
   "    claude        (then use /login)" \
   "Skip if you're already logged in."
 
+verify "claude CLI installed"       bash -lc 'command -v claude >/dev/null || test -x "$HOME/.local/bin/claude"'
+verify "claude CLI runs"            bash -lc '"${HOME}/.local/bin/claude" --version >/dev/null 2>&1 || claude --version >/dev/null 2>&1'
+verify "npx resolvable for MCPs"    test -x "$NPX_BIN"
 verify "device-assess agent present" test -f "$HOME/.claude/agents/device-assess.md"
 verify "mcp-doctor skill present" test -f "$HOME/.claude/skills/mcp-doctor/SKILL.md"
 verify "mcpServers in config" python3 -c "import json;assert json.load(open('$HOME/.claude.json'))['mcpServers']"
