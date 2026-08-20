@@ -62,7 +62,7 @@ for LABEL in $(mf_host_labels); do
   # are very different facts, and calling the second one drift would make the job
   # cry wolf every single day. Probe the gap before classifying it.
   MISSING="$TMP/missing.$LABEL"; : > "$MISSING"
-  while IFS=$'\t' read -r rel hp render; do
+  while IFS=$'\t' read -r rel hp render mode; do
     [ -f "$TREE/${hp#/}" ] || echo "$hp" >> "$MISSING"
   done < "$MAP"
   EXISTS="$TMP/exists.$LABEL"; : > "$EXISTS"
@@ -76,7 +76,7 @@ for LABEL in $(mf_host_labels); do
   fi
 
   host_drift=0
-  while IFS=$'\t' read -r rel hp render; do
+  while IFS=$'\t' read -r rel hp render mode; do
     repo_f="$PAYLOAD/$rel"; host_f="$TREE/${hp#/}"
     if [ ! -f "$host_f" ]; then
       if grep -qxF "$hp" "$EXISTS"; then
@@ -96,6 +96,14 @@ for LABEL in $(mf_host_labels); do
         host_drift=$((host_drift+1))
       fi
       continue
+    fi
+    # tar preserves modes, so an explicitly-specified mode is checkable here.
+    if [ "$mode" != "-" ]; then
+      actual="$(stat -c %a "$host_f")"
+      if [ "$actual" != "$mode" ]; then
+        log "[DRIFT] $LABEL wrong mode: $hp is $actual, should be $mode"
+        host_drift=$((host_drift+1))
+      fi
     fi
     cmp -s "$repo_f" "$host_f" && continue
     mf_render "$repo_f" "$render" "$HOME_D" "$USER_N" > "$TMP/rendered" 2>/dev/null

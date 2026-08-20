@@ -9,24 +9,24 @@ STACK_ROOT="${STACK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 MANIFEST="${MANIFEST:-$STACK_ROOT/manifest.conf}"
 PAYLOAD="${PAYLOAD:-$STACK_ROOT/payload}"
 
-MF_RULES=()   # primary rules  "pattern|dest|owner|render|hosts|flags", file order kept
+MF_RULES=()   # primary rules  "pattern|dest|owner|render|hosts|flags|mode", order kept
 MF_EXTRA=()   # additive rules (leading '+'): a second destination for a placed file
 MF_HOSTS=()   # "label|ssh|home|user"
 
 mf_load() {
   [ -f "$MANIFEST" ] || { echo "manifest not found: $MANIFEST" >&2; return 1; }
   MF_RULES=(); MF_EXTRA=(); MF_HOSTS=()
-  local a b c d e f
-  while read -r a b c d e f _; do
+  local a b c d e f g
+  while read -r a b c d e f g _; do
     case "$a" in ''|'#'*) continue;; esac
     if [ "$a" = "@host" ]; then
       MF_HOSTS+=("$b|$c|$d|$e")
     elif [ "${a#+}" != "$a" ]; then
       [ -n "${e:-}" ] || { echo "manifest: short additive rule: $a" >&2; return 1; }
-      MF_EXTRA+=("${a#+}|$b|$c|$d|$e|${f:--}")
+      MF_EXTRA+=("${a#+}|$b|$c|$d|$e|${f:--}|${g:--}")
     else
       [ -n "${e:-}" ] || { echo "manifest: short rule: $a" >&2; return 1; }
-      MF_RULES+=("$a|$b|$c|$d|$e|${f:--}")
+      MF_RULES+=("$a|$b|$c|$d|$e|${f:--}|${g:--}")
     fi
   done < "$MANIFEST"
   [ ${#MF_RULES[@]} -gt 0 ] || { echo "manifest: no rules parsed" >&2; return 1; }
@@ -121,24 +121,24 @@ mf_host_wanted() { # <hosts-field> <label>
 
 # The full deployment map for one host: every repo-owned payload file paired with
 # every place it must appear (primary destination plus any additive ones).
-# Emits TSV: relpath <tab> host-abs-path <tab> render-mode
+# Emits TSV: relpath <tab> host-abs-path <tab> render-mode <tab> install-mode
 mf_map() { # <label> <home>
-  local label="$1" home="$2" rel r e pat dest owner render hosts flags hp
+  local label="$1" home="$2" rel r e pat dest owner render hosts flags mode hp
   while IFS= read -r rel; do
     r="$(mf_lookup "$rel")"
     if [ -z "$r" ]; then echo "mf_map: no rule for $rel" >&2; continue; fi
-    IFS='|' read -r pat dest owner render hosts flags <<< "$r"
+    IFS='|' read -r pat dest owner render hosts flags mode <<< "$r"
     if [ "$owner" = repo ] && [ "$dest" != "-" ] && mf_host_wanted "$hosts" "$label"; then
       hp="$(mf_hostpath "$rel" "$pat" "$dest" "$home")" \
-        && printf '%s\t%s\t%s\n' "$rel" "$hp" "$render"
+        && printf '%s\t%s\t%s\t%s\n' "$rel" "$hp" "$render" "$mode"
     fi
     [ "$owner" = repo ] || continue
     while IFS= read -r e; do
       [ -n "$e" ] || continue
-      IFS='|' read -r pat dest owner render hosts flags <<< "$e"
+      IFS='|' read -r pat dest owner render hosts flags mode <<< "$e"
       [ "$owner" = repo ] && [ "$dest" != "-" ] && mf_host_wanted "$hosts" "$label" || continue
       hp="$(mf_hostpath "$rel" "$pat" "$dest" "$home")" \
-        && printf '%s\t%s\t%s\n' "$rel" "$hp" "$render"
+        && printf '%s\t%s\t%s\t%s\n' "$rel" "$hp" "$render" "$mode"
     done < <(mf_extra "$rel")
   done < <(cd "$PAYLOAD" && find . -type f -printf '%P\n' | sort)
 }
@@ -190,10 +190,13 @@ mf_pull() { # <ssh|-> <destdir> ; absolute host paths on stdin
 # host offers it. Without this, a root-only file can never be compared, so apply
 # rewrites it on every run and drift can only ever say "unreadable".
 # Returns 1 (and writes nothing) when the host has no passwordless sudo.
+# Invoked exactly as the sudoers grant in payload/stack-cron/sudoers.d-stack-drift
+# names it: the absolute /usr/bin/cat with the path as a bare literal argument. A
+# `--` or a bare `cat` would not match that rule and the read would silently fail.
 mf_read_priv() { # <ssh|-> <abs-path> ; content to stdout
   local tgt="$1" path="$2"
-  if [ "$tgt" = "-" ]; then sudo -n cat -- "$path" 2>/dev/null
-  else ssh -o BatchMode=yes -o ConnectTimeout=15 "$tgt" "sudo -n cat -- '$path'" 2>/dev/null; fi
+  if [ "$tgt" = "-" ]; then sudo -n /usr/bin/cat "$path" 2>/dev/null
+  else ssh -o BatchMode=yes -o ConnectTimeout=15 "$tgt" "sudo -n /usr/bin/cat '$path'" 2>/dev/null; fi
 }
 
 mf_host_up() { # <ssh|->

@@ -1,0 +1,17 @@
+# stack-drift — let the unprivileged drift monitor verify the root-only policy
+# files it tracks, and nothing else.
+#
+# Scope is deliberately as small as it can be while still being useful:
+#   * read-only. `cat`, never an editor, never a shell.
+#   * exact paths as literal arguments. No wildcards, so this cannot be turned into
+#     a read primitive for any other root-owned file.
+#   * both files' contents already live in the pi5-stack repo and in
+#     ~/ap-testbed/sudoers.d-ap-testbed, so this discloses nothing the operator
+#     account cannot already read. The grant buys verification, not access.
+#   * /etc/sudoers.d is 0755 root:root and its files are 0440 root:root, so the
+#     unprivileged user cannot swap either path for a symlink to something else.
+#
+# Without this the daily job can only report /etc/sudoers.d/ap-testbed as
+# "unreadable, not checked" — a permanent blind spot in the one file that defines
+# what the portal is allowed to do as root.
+__STACK_USER__ ALL=(root) NOPASSWD: /usr/bin/cat /etc/sudoers.d/ap-testbed, /usr/bin/cat /etc/sudoers.d/stack-drift

@@ -39,6 +39,19 @@ mkdir -p "$HOME/stack-cron/logs" "$HOME/backups" "$HOME/ap-testbed/state"
 log "installing stack-watchdog…"
 install_script "$STACK_ROOT/payload/stack-resilience/stack-watchdog.sh" "$HOME/stack-resilience"
 
+# 2b. narrow sudoers grant so the drift monitor can verify root-only policy files.
+# Rendered for this host and validated before install — an invalid file here costs
+# sudo on the box, so it is never written unless visudo accepts it.
+log "installing stack-drift sudoers grant…"
+sd_tmp="$(mktemp)"
+sed -e "s|__STACK_USER__|$U|g" "$STACK_ROOT/payload/stack-cron/sudoers.d-stack-drift" > "$sd_tmp"
+if visudo -cf "$sd_tmp" >/dev/null 2>&1; then
+  as_root install -m0440 -o root -g root "$sd_tmp" /etc/sudoers.d/stack-drift
+else
+  warn "stack-drift sudoers failed validation — NOT installed (drift will report the policy file as unreadable)"
+fi
+rm -f "$sd_tmp"
+
 # 3. systemd units (templated)
 for u in "$STACK_ROOT"/payload/stack-cron/systemd/*.service \
          "$STACK_ROOT"/payload/stack-cron/systemd/*.timer \
@@ -77,6 +90,7 @@ verify "no unit points at a missing script" bash -c '
     [ -n "$x" ] && [ ! -x "$x" ] && { echo "  !! $(basename "$u") -> missing $x"; bad=1; }
   done
   [ $bad -eq 0 ]'
+verify "drift can read policy files" bash -c 'sudo -n /usr/bin/cat /etc/sudoers.d/ap-testbed >/dev/null 2>&1'
 verify "cert-watch timer enabled"   systemctl is-enabled --quiet cert-watch.timer
 verify "drift timer enabled"        systemctl is-enabled --quiet stack-drift.timer
 verify "watchdog timer enabled"     systemctl is-enabled --quiet stack-watchdog.timer

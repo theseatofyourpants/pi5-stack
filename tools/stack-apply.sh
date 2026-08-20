@@ -49,6 +49,13 @@ put_file() { # <ssh|-> <destpath> <mode> <need_sudo>
   [ "$sudo_" = 1 ] && S="sudo "
   case "$dest" in
     /etc/sudoers.d/*|/etc/sudoers)
+      # sudo silently IGNORES a sudoers file that is not 0440, so a mode mistake
+      # produces a rule that looks installed and does nothing. Refuse rather than
+      # install something inert.
+      if [ "$mode" != 0440 ]; then
+        echo "  !! REFUSED: $dest must be mode 0440, manifest says $mode" >&2
+        return 1
+      fi
       cat > "$TMP/sudoers.check"
       if ! visudo -cf "$TMP/sudoers.check" >/dev/null 2>&1; then
         echo "  !! REFUSED: $dest failed visudo validation — not written" >&2
@@ -73,13 +80,13 @@ for LABEL in $(mf_host_labels); do
   if ! mf_host_up "$SSH_TGT"; then echo "[warn]  $LABEL unreachable — skipped"; continue; fi
 
   MAP="$TMP/map.$LABEL"
-  mf_map "$LABEL" "$HOME_D" 2>/dev/null | while IFS=$'\t' read -r rel hp render; do
-    in_filter "$rel" && printf '%s\t%s\t%s\n' "$rel" "$hp" "$render"
+  mf_map "$LABEL" "$HOME_D" 2>/dev/null | while IFS=$'\t' read -r rel hp render mode; do
+    in_filter "$rel" && printf '%s\t%s\t%s\t%s\n' "$rel" "$hp" "$render" "$mode"
   done > "$MAP"
 
   TREE="$TMP/tree.$LABEL"; cut -f2 "$MAP" | mf_pull "$SSH_TGT" "$TREE"
 
-  while IFS=$'\t' read -r rel hp render; do
+  while IFS=$'\t' read -r rel hp render mode; do
     TOTAL=$((TOTAL+1))
     repo_f="$PAYLOAD/$rel"; host_f="$TREE/${hp#/}"
     mf_render "$repo_f" "$render" "$HOME_D" "$USER_N" > "$TMP/want" || continue
@@ -94,9 +101,16 @@ for LABEL in $(mf_host_labels); do
         verb="create"
       fi
     fi
-    if [ -f "$host_f" ] && cmp -s "$TMP/want" "$host_f"; then continue; fi
+    # Content alone is not enough: a sudoers file with the right text and the wrong
+    # mode is inert, and comparing only bytes would report it as already applied.
+    if [ -f "$host_f" ] && cmp -s "$TMP/want" "$host_f"; then
+      [ "$mode" = "-" ] && continue
+      [ "$(stat -c %a "$host_f")" = "$mode" ] && continue
+      verb="chmod "
+    fi
 
-    mode="$(stat -c %a "$repo_f")"
+    # Only fall back to the repo file's mode when the manifest does not specify one.
+    [ "$mode" = "-" ] && mode="$(stat -c %a "$repo_f")"
     need_sudo=0; case "$hp" in "$HOME_D"/*) ;; *) need_sudo=1;; esac
     case "$hp" in /etc/systemd/system/*) UNITS=$((UNITS+1));; esac
 
