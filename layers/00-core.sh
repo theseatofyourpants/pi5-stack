@@ -56,6 +56,14 @@ for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
   grep -qF '$HOME/go/bin:$HOME/go-sdk/bin' "$rc" 2>/dev/null || echo "$PATH_LINE" >> "$rc"
 done
 
+# Stop corepack silently upgrading npm past what this node can run (see NPM_PIN in
+# versions.env). The activation in ensure_npx is the durable half; this keeps an
+# interactive shell from undoing it.
+COREPACK_LINE='export COREPACK_DEFAULT_TO_LATEST=0'
+for rc in "$HOME/.zshenv" "$HOME/.bashrc"; do
+  grep -qF 'COREPACK_DEFAULT_TO_LATEST' "$rc" 2>/dev/null || echo "$COREPACK_LINE" >> "$rc"
+done
+
 # --- tailscale (daemon only; `tailscale up` is a manual step you run when needed) ---
 if ! need_cmd tailscale; then
   log "installing tailscale…"

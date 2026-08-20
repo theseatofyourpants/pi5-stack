@@ -12,6 +12,9 @@ soft(){ local d="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$d"; else warn "$
 hr; log "STACK VERIFY"; log "profile: $PROFILE   arch: $ARCH"; hr
 
 log "— core —"
+chk "npm pinned (no node-version warning)" bash -lc '
+  n="$(/usr/share/nodejs/corepack/shims/npm --version 2>/dev/null || npm --version 2>/dev/null)"
+  [ -z "${NPM_PIN:-}" ] || [ "$n" = "$NPM_PIN" ]'
 chk "claude CLI present"              bash -lc 'command -v claude >/dev/null || test -x "$HOME/.local/bin/claude"'
 chk "operator skills (device-assess)" test -f "$HOME/.claude/agents/device-assess.md"
 chk "MCP npx path is absolute+exec"   python3 -c "

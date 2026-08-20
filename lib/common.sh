@@ -100,6 +100,13 @@ export PROFILE
 # putting npm or npx on PATH at all.
 ensure_npx() {
   local p
+  # Pin npm before handing back a shim. Corepack defaults to pulling the newest npm,
+  # which outruns the node this stack has; --activate persists in corepack's cache,
+  # so it survives a shell that never sourced COREPACK_DEFAULT_TO_LATEST=0.
+  if [ -n "${NPM_PIN:-}" ] && command -v corepack >/dev/null 2>&1; then
+    COREPACK_DEFAULT_TO_LATEST=0 corepack prepare "npm@$NPM_PIN" --activate >/dev/null 2>&1 \
+      || warn "could not pin npm to $NPM_PIN — npx MCP launches may warn about the node version"
+  fi
   p="$(command -v npx 2>/dev/null)" && { echo "$p"; return 0; }
   for p in /usr/share/nodejs/corepack/shims/npx /usr/lib/node_modules/corepack/shims/npx; do
     [ -x "$p" ] && { echo "$p"; return 0; }
