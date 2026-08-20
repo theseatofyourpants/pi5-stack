@@ -220,7 +220,14 @@ which the layers are not. Both read the same `payload/`, and every host-specific
 tools/stack-drift.sh                        compare repo vs every reachable host
 tools/stack-apply.sh   --host vm --apply    push  repo -> host, rendered per host
 tools/stack-promote.sh --host pi --apply P  pull  host -> repo, round-trip verified
+tools/stack-freshness.sh                    how far behind is every pin in versions.env
+tools/secret-scan.sh                        commit gate (--self-test to prove it works)
 ```
+
+Pins are reproducibility, not preservation: left alone they become unpatched or
+unbuildable. `stack-freshness.sh` reports the gap weekly against `freshness.conf`
+(which upstream each pin comes from), and the `stack-refresh` skill walks the bumps
+one at a time with a verify and a rollback between each.
 The loop for new tooling: write it live on the Pi, `stack-promote` it into the repo,
 commit, `stack-apply` it to the VM. `stack-drift` runs daily and exits non-zero if a
 step was skipped.

@@ -1,0 +1,12 @@
+[Unit]
+Description=Report how far behind the pinned dependencies in versions.env have drifted
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tsoyp
+Group=tsoyp
+Environment=HOME=/home/tsoyp
+ExecStart=/home/tsoyp/pi5-stack/tools/stack-freshness.sh
+TimeoutStartSec=600

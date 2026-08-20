@@ -1,0 +1,15 @@
+[Unit]
+Description=Weekly dependency-freshness review (Mondays 09:00)
+
+[Timer]
+# Weekly, not daily: pins move on the order of weeks, and a report that repeats
+# nine unchanged findings every morning is one nobody reads by the second week.
+OnCalendar=Mon *-*-* 09:00:00
+# Catch up if the Pi was off — a skipped review just delays it, it does not expire.
+Persistent=true
+# Staggered so fourteen GitHub/PyPI/npm queries do not fire on the same second.
+RandomizedDelaySec=1800
+Unit=stack-freshness.service
+
+[Install]
+WantedBy=timers.target
