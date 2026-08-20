@@ -80,7 +80,17 @@ for LABEL in $(mf_host_labels); do
     repo_f="$PAYLOAD/$rel"; host_f="$TREE/${hp#/}"
     if [ ! -f "$host_f" ]; then
       if grep -qxF "$hp" "$EXISTS"; then
-        log "[warn]  $LABEL unreadable (needs root, not checked): $hp"
+        # Present but unreadable. If the host grants passwordless sudo we can still
+        # compare it properly; if not, say so rather than calling it drift.
+        if mf_read_priv "$SSH_TGT" "$hp" > "$TMP/priv" 2>/dev/null && [ -s "$TMP/priv" ]; then
+          mf_render "$repo_f" "$render" "$HOME_D" "$USER_N" > "$TMP/rendered" 2>/dev/null
+          if cmp -s "$TMP/rendered" "$TMP/priv"; then continue; fi
+          n="$(diff "$TMP/rendered" "$TMP/priv" 2>/dev/null | grep -c '^[<>]')"
+          log "[DRIFT] $LABEL differs: $hp ($n changed line(s), root-read)"
+          host_drift=$((host_drift+1))
+        else
+          log "[warn]  $LABEL unreadable (no passwordless sudo, not checked): $hp"
+        fi
       else
         log "[DRIFT] $LABEL missing: $hp   (from $rel)"
         host_drift=$((host_drift+1))

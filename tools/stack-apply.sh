@@ -83,9 +83,19 @@ for LABEL in $(mf_host_labels); do
     TOTAL=$((TOTAL+1))
     repo_f="$PAYLOAD/$rel"; host_f="$TREE/${hp#/}"
     mf_render "$repo_f" "$render" "$HOME_D" "$USER_N" > "$TMP/want" || continue
+
+    # Root-only files never make it into the unprivileged pull. Try a privileged
+    # read before assuming they are absent, or we rewrite them on every single run.
+    verb="update"
+    if [ ! -f "$host_f" ]; then
+      if mf_read_priv "$SSH_TGT" "$hp" > "$TMP/priv" 2>/dev/null && [ -s "$TMP/priv" ]; then
+        host_f="$TMP/priv"
+      else
+        verb="create"
+      fi
+    fi
     if [ -f "$host_f" ] && cmp -s "$TMP/want" "$host_f"; then continue; fi
 
-    verb="update"; [ -f "$host_f" ] || verb="create"
     mode="$(stat -c %a "$repo_f")"
     need_sudo=0; case "$hp" in "$HOME_D"/*) ;; *) need_sudo=1;; esac
     case "$hp" in /etc/systemd/system/*) UNITS=$((UNITS+1));; esac

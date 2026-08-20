@@ -186,6 +186,16 @@ mf_pull() { # <ssh|-> <destdir> ; absolute host paths on stdin
   fi
   return 0
 }
+# Read one file that the unprivileged pull could not, using passwordless sudo if the
+# host offers it. Without this, a root-only file can never be compared, so apply
+# rewrites it on every run and drift can only ever say "unreadable".
+# Returns 1 (and writes nothing) when the host has no passwordless sudo.
+mf_read_priv() { # <ssh|-> <abs-path> ; content to stdout
+  local tgt="$1" path="$2"
+  if [ "$tgt" = "-" ]; then sudo -n cat -- "$path" 2>/dev/null
+  else ssh -o BatchMode=yes -o ConnectTimeout=15 "$tgt" "sudo -n cat -- '$path'" 2>/dev/null; fi
+}
+
 mf_host_up() { # <ssh|->
   [ "$1" = "-" ] && return 0
   ssh -o BatchMode=yes -o ConnectTimeout=10 "$1" true 2>/dev/null
