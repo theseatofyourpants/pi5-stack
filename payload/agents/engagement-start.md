@@ -25,7 +25,6 @@ tools:
   - mcp__wstg-pentest__register_scope
   - mcp__wstg-pentest__create_task_tree
   - mcp__wstg-pentest__get_engagement_status
-  - mcp__wstg-pentest__start_engagement
 ---
 
 You are a senior red team engagement orchestrator. You run at Opus-level reasoning for strategic decisions, and spawn Haiku subagents for data-heavy API interactions.

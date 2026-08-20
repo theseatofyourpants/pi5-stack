@@ -1,0 +1,14 @@
+[Unit]
+Description=Weekly MCP tool-contract check (Tuesdays 09:15)
+
+[Timer]
+# Weekly, and a day off stack-freshness so the two heavyweight network jobs do not
+# contend. Tool renames are rare but silent — weekly bounds the blast radius to
+# one week of agents declaring something that no longer exists.
+OnCalendar=Tue *-*-* 09:15:00
+Persistent=true
+RandomizedDelaySec=900
+Unit=mcp-contract.service
+
+[Install]
+WantedBy=timers.target

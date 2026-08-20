@@ -221,6 +221,8 @@ tools/stack-drift.sh                        compare repo vs every reachable host
 tools/stack-apply.sh   --host vm --apply    push  repo -> host, rendered per host
 tools/stack-promote.sh --host pi --apply P  pull  host -> repo, round-trip verified
 tools/stack-freshness.sh                    how far behind is every pin in versions.env
+tools/mcp-contract.py                       do the MCP tools agents declare still exist?
+tools/backup-verify.sh                      can the newest backup actually be restored?
 tools/secret-scan.sh                        commit gate (--self-test to prove it works)
 ```
 

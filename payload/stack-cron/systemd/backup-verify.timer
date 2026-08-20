@@ -1,0 +1,14 @@
+[Unit]
+Description=Daily backup restore rehearsal (03:30, after stack-backup at 03:00)
+
+[Timer]
+# Daily, not weekly: the point is catching a backup job that has STOPPED, and the
+# verifier alerts once the newest archive is >3d old. Weekly checking would let a
+# dead backup run a week before anyone heard about it. Extraction is a few seconds.
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=300
+Unit=backup-verify.service
+
+[Install]
+WantedBy=timers.target

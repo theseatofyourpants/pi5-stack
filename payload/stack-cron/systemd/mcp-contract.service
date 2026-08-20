@@ -1,0 +1,14 @@
+[Unit]
+Description=Verify every MCP tool declared by an agent or skill still exists upstream
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tsoyp
+Group=tsoyp
+Environment=HOME=/home/tsoyp
+ExecStart=/home/tsoyp/pi5-stack/tools/mcp-contract.py --quiet
+# Spawns ~10 MCP servers in sequence; hexstrike and the npx-based ones are slow to
+# hand back a tools/list.
+TimeoutStartSec=1200

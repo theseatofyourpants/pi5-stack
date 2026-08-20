@@ -1,0 +1,11 @@
+[Unit]
+Description=Rehearse a restore of the newest nightly backup archive
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=tsoyp
+Group=tsoyp
+Environment=HOME=/home/tsoyp
+ExecStart=/home/tsoyp/pi5-stack/tools/backup-verify.sh
+TimeoutStartSec=900
