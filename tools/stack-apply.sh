@@ -93,10 +93,10 @@ for LABEL in $(mf_host_labels); do
 
     # Root-only files never make it into the unprivileged pull. Try a privileged
     # read before assuming they are absent, or we rewrite them on every single run.
-    verb="update"
+    verb="update"; used_priv=0
     if [ ! -f "$host_f" ]; then
       if mf_read_priv "$SSH_TGT" "$hp" > "$TMP/priv" 2>/dev/null && [ -s "$TMP/priv" ]; then
-        host_f="$TMP/priv"
+        host_f="$TMP/priv"; used_priv=1
       else
         verb="create"
       fi
@@ -105,7 +105,21 @@ for LABEL in $(mf_host_labels); do
     # mode is inert, and comparing only bytes would report it as already applied.
     if [ -f "$host_f" ] && cmp -s "$TMP/want" "$host_f"; then
       [ "$mode" = "-" ] && continue
-      [ "$(mf_norm_mode "$(stat -c %a "$host_f")")" = "$(mf_norm_mode "$mode")" ] && continue
+      # $host_f is a TEMP FILE when the content came from a privileged read, so
+      # stat'ing it reports the temp file's mode, not the real one. Doing that
+      # made every run either rewrite the file (passwordless host) or hard-fail
+      # (password host). Ask the host for the real mode instead, and if we cannot
+      # observe it, leave the file alone rather than chmod'ing it blind.
+      if [ "$used_priv" -eq 1 ]; then
+        real_mode="$(mf_stat_priv "$SSH_TGT" "$hp")"
+        if [ -z "$real_mode" ]; then
+          echo "[skip ] $hp — content matches; mode not verifiable (no stat grant)"
+          continue
+        fi
+      else
+        real_mode="$(stat -c %a "$host_f")"
+      fi
+      [ "$(mf_norm_mode "$real_mode")" = "$(mf_norm_mode "$mode")" ] && continue
       verb="chmod "
     fi
 

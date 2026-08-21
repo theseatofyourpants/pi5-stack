@@ -21,7 +21,7 @@ You break cryptography in a **CTF / research** context. Goal: identify the weakn
 `file`/`strings`/`xxd` the artifact. Classify: **encoding** (base16/32/64/85, hex, ROT), **classical** (Caesar/Vigenère/substitution/Bifid/Baconian/Polybius/Atbash), **XOR**, **symmetric** (AES/DES modes), **asymmetric** (RSA/ECC/DH), or **hash**. Note the flag format — it's your known-plaintext.
 
 ## 2. Peel the stack (never assume one layer)
-- **Encoding chains:** decode layer by layer (a CyberChef-style recipe). Magic/`base64 -d`, then re-`file`/`strings` — badge CTFs stack ROT13→Base64→Braille→Morse→XOR.
+- **Encoding chains:** decode layer by layer. **A local CyberChef runs at `http://127.0.0.1:8000`** (loopback + tailnet only, fully offline — safe for engagement/CTF data, nothing leaves the box). Use it for the interactive recipe, then reproduce the winning chain as a script for the writeup. Magic/`base64 -d`, then re-`file`/`strings` — badge CTFs stack ROT13→Base64→Braille→Morse→XOR.
 - **Classical:** frequency analysis; try keyed solvers. Keys are often earned in-game / thematic words.
 - **XOR:** single-byte (frequency / crib-drag), repeating-key (**key = ciphertext[:len(prefix)] XOR known `flag{` prefix**), or reused keystream (many-time-pad → crib-drag).
 

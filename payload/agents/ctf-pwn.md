@@ -29,7 +29,8 @@ You solve CTF binary-exploitation challenges. Context is a **CTF competition / s
 - `file`/`strings`; if a libc is provided, `pwninit` to patch + set up; `libc_database_lookup` if you only have a leak.
 
 ## 2. Find the bug
-Decompile with `ghidra`/`radare2`; read for the classic classes: stack/heap overflow, format string, UAF/double-free, off-by-one, integer issues, command injection. Confirm the primitive in `gdb`/peda.
+Decompile with `ghidra`/`radare2`; read for the classic classes: stack/heap overflow, format string, UAF/double-free, off-by-one, integer issues, command injection. Confirm the primitive in `gdb` — **GEF is installed and auto-loads** from `~/.gdbinit` (`gef` commands: `checksec`, `vmmap`, `heap chunks`, `pattern create/offset`, `ropper`).
+> **Note:** the `mcp__hexstrike__gdb_peda_debug` tool is broken on this stack — the server hardcodes `source ~/peda/peda.py`, which exists on neither host. Drive `gdb` through Bash (GEF loads automatically) rather than that MCP tool.
 
 ## 3. Build the exploit
 Match technique to mitigations:

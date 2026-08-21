@@ -146,6 +146,15 @@ mf_map() { # <label> <home>
 # Normalise an octal mode for comparison. `stat -c %a` prints 644 while a manifest
 # naturally reads 0644, and comparing those as strings reports a mismatch on every
 # run for every file with an explicit MODE. Interpret both as octal and re-pad.
+# Read a root-only file's MODE. Separate from mf_read_priv because the sudoers
+# grant lists exact commands: `cat` alone does not let us see the mode, and apply
+# must never chmod a file whose current mode it could not actually observe.
+mf_stat_priv() { # <ssh|-> <abs-path>
+  local tgt="$1" path="$2"
+  if [ "$tgt" = "-" ]; then sudo -n /usr/bin/stat -c %a "$path" 2>/dev/null
+  else ssh -o BatchMode=yes -o ConnectTimeout=15 "$tgt" "sudo -n /usr/bin/stat -c %a '$path'" 2>/dev/null; fi
+}
+
 mf_norm_mode() { # <mode>
   [ "$1" = "-" ] && { echo "-"; return; }
   printf '%04o' "$((8#$1))" 2>/dev/null || echo "$1"

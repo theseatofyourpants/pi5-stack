@@ -5,6 +5,7 @@
 # NOTE: pulls Ghidra (a JDK + a few hundred MB) — the slow part of this layer.
 set -euo pipefail
 source "$STACK_ROOT/lib/common.sh"
+source "$STACK_ROOT/versions.env" 2>/dev/null || true
 
 log "apt: CTF toolchain (RE / crypto / stego / RF / serial)…"
 as_root apt-get update -qq
@@ -23,10 +24,44 @@ bash "$STACK_ROOT/payload/scripts/install-ztools.sh" || warn "ztools build had i
 log "installing extended offensive toolset (hexstrike-tools.sh)…"
 as_root bash "$STACK_ROOT/payload/scripts/hexstrike-tools.sh" || warn "extended toolset had issues — see output above"
 
+# ── GEF (gdb enhancement) ─────────────────────────────────────────────────────
+# NOT peda: hexstrike's gdb_peda_debug endpoint hardcodes `source ~/peda/peda.py`,
+# a path that has never existed on either host -- so that MCP tool is broken and
+# the stack had no gdb enhancement at all. GEF also has far better aarch64 support,
+# and both hosts are arm64. Pinned by release tag, user-scoped (no sudo).
+log "installing GEF ${GEF_TAG:-latest} (gdb enhancement for ctf-pwn / ctf-rev / fw-triage)…"
+if curl -fsSL "https://raw.githubusercontent.com/hugsy/gef/${GEF_TAG:-main}/gef.py" -o "$HOME/.gdbinit-gef.py"; then
+  grep -q 'gdbinit-gef.py' "$HOME/.gdbinit" 2>/dev/null \
+    || echo "source $HOME/.gdbinit-gef.py" >> "$HOME/.gdbinit"
+else
+  warn "GEF download failed — gdb will run unenhanced"
+fi
+
+# ── CyberChef (local decode workbench) ────────────────────────────────────────
+# Offline "cyber swiss-army knife" for the ctf-* / fw-triage / rf-decode chains.
+# Bound to loopback + tailnet ONLY -- never 0.0.0.0. Enforced at the Docker port
+# binding, so it needs no lab-guard rule (it never reaches the LAN in the first
+# place). Pinned by digest, same discipline as COWRIE_DIGEST.
+if command -v docker >/dev/null 2>&1; then
+  log "starting CyberChef on 127.0.0.1:${CYBERCHEF_PORT:-8000} + tailnet…"
+  _ts_ip="$(tailscale ip -4 2>/dev/null | head -1 | tr -d '[:space:]')"
+  _cc_ref="${CYBERCHEF_IMAGE:-mpepping/cyberchef}@${CYBERCHEF_DIGEST:-}"
+  [ -z "${CYBERCHEF_DIGEST:-}" ] && _cc_ref="${CYBERCHEF_IMAGE:-mpepping/cyberchef}:latest"
+  docker pull -q "$_cc_ref" >/dev/null 2>&1 || warn "cyberchef pull failed"
+  docker rm -f cyberchef >/dev/null 2>&1 || true
+  docker run -d --name cyberchef --restart unless-stopped \
+    -p "127.0.0.1:${CYBERCHEF_PORT:-8000}:8000" \
+    ${_ts_ip:+-p "${_ts_ip}:${CYBERCHEF_PORT:-8000}:8000"} \
+    "$_cc_ref" >/dev/null 2>&1 && ok "cyberchef up" || warn "cyberchef failed to start"
+else
+  warn "docker absent — skipping CyberChef"
+fi
+
 verify "dfrotz present"   bash -lc 'command -v dfrotz'
 verify "infodump present" bash -lc 'command -v infodump'
 verify "multimon-ng"      bash -lc 'command -v multimon-ng'
 verify "ghidra present"   bash -lc 'command -v ghidra'
 # Debian ships pycryptodome under the 'Cryptodome' namespace, not 'Crypto':
 verify "pycryptodome"     python3 -c 'import Cryptodome'
+verify "gef loads in gdb" bash -lc 'gdb -q -batch -ex "gef" 2>&1 | grep -q "commands loaded"'
 ok "55-ctf-tools done — solve scripts import from 'Cryptodome' (not 'Crypto') on this box"

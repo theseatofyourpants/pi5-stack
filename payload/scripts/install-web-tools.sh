@@ -3,6 +3,12 @@
 # All user-space (no sudo): go install -> ~/go/bin, pipx -> ~/.local/bin, cargo -> ~/.cargo/bin.
 # Idempotent-ish: re-running just reinstalls @latest. Logs pass/fail per tool, never aborts.
 
+# Source the pins directly: this script runs as a CHILD of the layer, which sources
+# versions.env without exporting -- so SSTIMAP_COMMIT would otherwise be empty here
+# and the clone would silently float to master HEAD.
+_SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${STACK_ROOT:-$_SELF_DIR/../..}/versions.env" 2>/dev/null || true
+
 export GOROOT="$HOME/go-sdk"
 export GOPATH="$HOME/go"
 export GOBIN="$HOME/go/bin"
@@ -45,6 +51,28 @@ if ! pipx install paramspider --force >>"$LOG" 2>&1; then
   pipx install "git+https://github.com/devanshbatham/paramspider.git" --force >>"$LOG" 2>&1
 fi
 command -v paramspider >/dev/null 2>&1 && { PASS+=(paramspider); say ">>> paramspider OK"; } || { FAIL+=(paramspider); say ">>> paramspider FAIL"; }
+
+say "=== SSTImap (server-side template injection; clone-and-run, pinned) ==="
+# Upstream ships no pyproject/setup.py, so pipx/pip cannot install it. Clone at the
+# pinned commit, give it its own venv, and drop a wrapper on PATH.
+SSTIMAP_REPO="${SSTIMAP_REPO:-https://github.com/vladko312/SSTImap.git}"
+SSTIMAP_COMMIT="${SSTIMAP_COMMIT:-}"
+SSTI_SRC="$HOME/SSTImap"
+if [ -d "$SSTI_SRC/.git" ]; then
+  git -C "$SSTI_SRC" fetch -q origin >>"$LOG" 2>&1 || true
+else
+  git clone -q "$SSTIMAP_REPO" "$SSTI_SRC" >>"$LOG" 2>&1 || true
+fi
+[ -n "$SSTIMAP_COMMIT" ] && git -C "$SSTI_SRC" checkout -q "$SSTIMAP_COMMIT" >>"$LOG" 2>&1 || true
+python3 -m venv "$SSTI_SRC/venv" >>"$LOG" 2>&1 || true
+"$SSTI_SRC/venv/bin/pip" install -q -r "$SSTI_SRC/requirements.txt" >>"$LOG" 2>&1 || true
+cat > "$HOME/.local/bin/sstimap" <<'WRAP'
+#!/usr/bin/env bash
+# wrapper: SSTImap is clone-and-run (no pyproject/setup.py upstream)
+exec "$HOME/SSTImap/venv/bin/python" "$HOME/SSTImap/sstimap.py" "$@"
+WRAP
+chmod 0755 "$HOME/.local/bin/sstimap"
+if sstimap --version >>"$LOG" 2>&1; then PASS+=(sstimap); say ">>> sstimap OK"; else FAIL+=(sstimap); say ">>> sstimap FAIL"; fi
 
 say "=== feroxbuster (prebuilt arm64 binary -> ~/.local/bin) ==="
 ( cd "$HOME/.local/bin" && curl -sL https://raw.githubusercontent.com/epi052/feroxbuster/main/install-nix.sh | bash ) >>"$LOG" 2>&1

@@ -168,6 +168,8 @@ This is the core loop. For each priority endpoint/vuln-class, **first pull the m
    - **XSS** → `dalfox_xss_scan` (feed the witness/WAF-bypass payloads)
    - **SQLi** → `sqlmap_scan` (respect the aggressiveness gate; confirm before high-risk)
    - **Auth / JWT** → `jwt_analyzer`; test session/auth logic per WSTG
+   - **SSTI** → `sstimap` (CLI via Bash — no MCP wrapper). `sstimap -u '<url-with-param>' --level 3`; add `-X POST -D 'p=v'` for body params, `--os-shell` ONLY behind the aggressiveness gate (it is RCE).
+     Covers Jinja2/Twig/Freemarker/Velocity/ERB/Mako etc. This is the engine behind the "reflected parameter → SSTI" pivot below; nothing else in the toolset tests template injection.
    - **GraphQL** → `graphql_scanner`; introspection, batching, injection
    - **API** → `api_fuzzer` / `comprehensive_api_audit`
    - **Misc / known-CVE / misconfig** → `nuclei_scan` (targeted templates), `nikto_scan`

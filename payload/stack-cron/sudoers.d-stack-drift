@@ -14,4 +14,10 @@
 # Without this the daily job can only report /etc/sudoers.d/ap-testbed as
 # "unreadable, not checked" — a permanent blind spot in the one file that defines
 # what the portal is allowed to do as root.
-__STACK_USER__ ALL=(root) NOPASSWD: /usr/bin/cat /etc/sudoers.d/ap-testbed, /usr/bin/cat /etc/sudoers.d/stack-drift
+#   * `stat -c %a` on the same two paths. Content alone is not enough: sudo
+#     SILENTLY IGNORES a sudoers file that is not 0440, so a file can be byte-
+#     perfect and still be inert. Without this, stack-apply cannot observe the
+#     real mode of a root-only file -- it was stat'ing its own temp copy, which
+#     made every run either rewrite the file (passwordless host) or hard-fail
+#     (password host). `stat` is read-only and discloses less than the `cat`.
+__STACK_USER__ ALL=(root) NOPASSWD: /usr/bin/cat /etc/sudoers.d/ap-testbed, /usr/bin/cat /etc/sudoers.d/stack-drift, /usr/bin/stat -c %a /etc/sudoers.d/ap-testbed, /usr/bin/stat -c %a /etc/sudoers.d/stack-drift
