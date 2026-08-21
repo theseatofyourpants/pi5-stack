@@ -71,6 +71,10 @@ verify "multimon-ng"      bash -lc 'command -v multimon-ng'
 verify "ghidra present"   bash -lc 'command -v ghidra'
 # Debian ships pycryptodome under the 'Cryptodome' namespace, not 'Crypto':
 verify "pycryptodome"     python3 -c 'import Cryptodome'
+# theHarvester 4.9.2 throws "Expected object or value" and then reports ZERO results
+# while exiting 0 -- a silent false-negative, which is worse than a crash. Assert the
+# version rather than mere presence.
+verify "theHarvester >=4.11" bash -lc 'v=$(dpkg-query -W -f="${Version}" theharvester 2>/dev/null | grep -oE "^[0-9]+\.[0-9]+" ); [ -n "$v" ] && [ "$(printf "%s\n4.11" "$v" | sort -V | head -1)" = "4.11" ]'
 verify "spiderfoot headless" bash -lc 'spiderfoot --help >/dev/null 2>&1'
 verify "recon-ng modules"    bash -lc '[ "$(find "$HOME/.recon-ng/modules" -name "*.py" 2>/dev/null | wc -l)" -gt 0 ]'
 verify "gef loads in gdb" bash -lc 'gdb -q -batch -ex "gef" 2>&1 | grep -q "commands loaded"'

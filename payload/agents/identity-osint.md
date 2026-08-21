@@ -54,15 +54,24 @@ handle exists; note active vs stale accounts.
 **3 — Social footprint.** `social-analyzer` on confirmed profiles for public bio,
 affiliations, location hints, posting cadence — the material a pretext is built from.
 
-**3b — Automated correlation.** `spiderfoot -s <email|domain|name> -u passive -o json -q`
-widens step 2/3 from "which platforms" to "what links to what" — affiliates, co-hosted
-sites, breach appearances, email↔domain ties — across ~200 sources in one pass. Feed it
-a **confirmed** selector (an email or personal domain), never a speculative one.
+**3b — Automated correlation.** For a confirmed personal domain or email, run
+`theHarvester -d <domain> -b crtsh,certspotter,otx,hackertarget,rapiddns,urlscan,hudsonrock,leakix -l 500`.
+This widens step 2/3 from "which platforms" to "what links to what": addresses tied to
+the domain, plus `hudsonrock`/`leakix` for infostealer and exposure records. Add
+`haveibeenpwned` for breach headlines (which breaches, never the credentials — see the
+hard rules above). Feed it a **confirmed** selector, never a speculative one.
 
-For a personal domain, `recon-ng-domain <domain>` adds registrant contact records
-(`whois_pocs`) that map a domain back to a named human — often the single strongest
-real-name↔infrastructure link in a dossier, and the one worth checking first on a
-DEFENSIVE self-exposure run.
+> **Check the version first.** theHarvester 4.9.2 throws
+> `Exception occurred: Expected object or value` and reports zero results while exiting 0.
+> An empty sweep from 4.9.2 is meaningless. 4.11.1+ is required.
+
+On the registrant-contact question specifically: `whois_lookup` in [[osint-profile]]
+Phase 1A already extracts registrant org and contacts, and BBOT carries a whois module
+too. Use one of those rather than a third path — `recon-ng-domain <domain>` exists on
+both hosts and works, but adds nothing here that is not already collected.
+
+*Secondary:* `spiderfoot -s <selector> -u passive -o json -q` casts a wider net, but its
+upstream stopped in **2023**, so treat any hit as a lead to confirm, not a finding.
 
 **4 — Exposure + infra tie-in.** `shodan`/`censys` for internet-exposed assets tied to
 the person/org (personal domains, home-lab IPs); enrich any IP/domain with GreyNoise/

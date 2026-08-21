@@ -34,7 +34,8 @@ apt-get update -qq || warn "apt update had issues"
 APT_TOOLS=(
   gdb checksec xsser dotdotpwn zaproxy arp-scan responder john httpie   # exploit/web/recon/creds
   enum4linux-ng sherlock rustscan ropgadget                             # recon/creds/pwn (present in Kali repos)
-  spiderfoot recon-ng                                                   # OSINT automation for osint-profile / identity-osint
+  spiderfoot recon-ng                                                   # OSINT automation (SECONDARY: spiderfoot upstream dead since 2023)
+  theharvester                                                          # PRIMARY email/people harvesting; 4.11.1+ required (4.9.2 silently returns nothing)
   ruby ruby-dev pipx golang-go                                          # runtimes for gem/pipx/go installs below
 )
 for p in "${APT_TOOLS[@]}"; do
@@ -98,7 +99,7 @@ clone https://github.com/niklasb/libc-database          libc-database
 # ── summary ──────────────────────────────────────────────────────────────────
 log "installed-tool check"
 CHECK=( gdb checksec ROPgadget ropper one_gadget pwninit angr:py pwntools:py xsser dotdotpwn zaproxy jaeles jwt_tool
-        rustscan arp-scan bbot autorecon sherlock social-analyzer shodan censys enum4linux-ng responder john httpie spiderfoot recon-ng
+        rustscan arp-scan bbot autorecon sherlock social-analyzer shodan censys enum4linux-ng responder john httpie spiderfoot recon-ng theHarvester
         trivy terrascan kube-bench prowler scout kube-hunter checkov )
 present=0; total=0
 for c in "${CHECK[@]}"; do
