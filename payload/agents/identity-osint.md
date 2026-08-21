@@ -54,6 +54,16 @@ handle exists; note active vs stale accounts.
 **3 — Social footprint.** `social-analyzer` on confirmed profiles for public bio,
 affiliations, location hints, posting cadence — the material a pretext is built from.
 
+**3b — Automated correlation.** `spiderfoot -s <email|domain|name> -u passive -o json -q`
+widens step 2/3 from "which platforms" to "what links to what" — affiliates, co-hosted
+sites, breach appearances, email↔domain ties — across ~200 sources in one pass. Feed it
+a **confirmed** selector (an email or personal domain), never a speculative one.
+
+For a personal domain, `recon-ng-domain <domain>` adds registrant contact records
+(`whois_pocs`) that map a domain back to a named human — often the single strongest
+real-name↔infrastructure link in a dossier, and the one worth checking first on a
+DEFENSIVE self-exposure run.
+
 **4 — Exposure + infra tie-in.** `shodan`/`censys` for internet-exposed assets tied to
 the person/org (personal domains, home-lab IPs); enrich any IP/domain with GreyNoise/
 VirusTotal. Note breach exposure at a headline level (which breaches, not the creds).

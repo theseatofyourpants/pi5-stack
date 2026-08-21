@@ -57,11 +57,21 @@ else
   warn "docker absent — skipping CyberChef"
 fi
 
+# ── OSINT automation setup (spiderfoot + recon-ng) ────────────────────────────
+# apt installs both via hexstrike-tools.sh above, but recon-ng ships with NO modules
+# -- a bare install is inert -- so the marketplace set and API keys are a separate
+# post-apt step. spiderfoot needs no setup; it runs headless straight from the CLI.
+log "setting up recon-ng modules + keys, installing recon-ng-domain wrapper…"
+install -Dm0755 "$STACK_ROOT/payload/scripts/recon-ng-domain.sh" "$HOME/.local/bin/recon-ng-domain"
+bash "$STACK_ROOT/payload/scripts/setup-recon-ng.sh" || warn "recon-ng setup had issues — see output above"
+
 verify "dfrotz present"   bash -lc 'command -v dfrotz'
 verify "infodump present" bash -lc 'command -v infodump'
 verify "multimon-ng"      bash -lc 'command -v multimon-ng'
 verify "ghidra present"   bash -lc 'command -v ghidra'
 # Debian ships pycryptodome under the 'Cryptodome' namespace, not 'Crypto':
 verify "pycryptodome"     python3 -c 'import Cryptodome'
+verify "spiderfoot headless" bash -lc 'spiderfoot --help >/dev/null 2>&1'
+verify "recon-ng modules"    bash -lc '[ "$(find "$HOME/.recon-ng/modules" -name "*.py" 2>/dev/null | wc -l)" -gt 0 ]'
 verify "gef loads in gdb" bash -lc 'gdb -q -batch -ex "gef" 2>&1 | grep -q "commands loaded"'
 ok "55-ctf-tools done — solve scripts import from 'Cryptodome' (not 'Crypto') on this box"

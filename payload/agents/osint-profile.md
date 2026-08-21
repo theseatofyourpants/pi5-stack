@@ -98,6 +98,28 @@ Spawn all Phase 1 subagents **in parallel**. None of these touch the target dire
 **Subagent 1B — DNS records:**
 > "Run dnsenum_scan on {target domain}. Collect: A, AAAA, MX, NS, TXT, CNAME, SOA records. Look for SPF/DMARC/DKIM configs in TXT records. Note any zone transfer attempts. Return all records structured."
 
+**Subagent 1C — SpiderFoot correlation sweep** (CLI via Bash — no MCP wrapper):
+> "Run `spiderfoot -s {target domain} -u passive -o json -q` and parse the JSON stream. Each record is `{generated, type, data, module, source}`. Group by `type` (Internet Name, Domain Whois, Co-Hosted Site, Email Address, Affiliate, Netblock...). Return the distinct entities plus which module produced each — provenance matters when two sources disagree."
+
+SpiderFoot's value here is **correlation across ~200 sources at once**, not any single
+lookup — it overlaps subfinder/amass on subdomains but adds affiliate, co-hosted-site
+and email/breach linkage the dedicated tools do not produce. Use `-u passive` for this
+phase; `-u footprint`/`-u investigate` make direct contact and belong in Phase 3.
+
+**Subagent 1D — recon-ng chain** (CLI via Bash — no MCP wrapper):
+> "Run `recon-ng-domain {target domain}` and return the hosts and contacts tables it prints."
+
+Wraps a non-interactive resource-file chain (hackertarget → certificate transparency →
+whois_pocs → resolve) against the persistent `stack` workspace, so results accumulate
+across runs and a later scan can diff against an earlier one. `whois_pocs` is the piece
+worth the trouble — registrant contact names/emails feed [[phish-sim]] pretexting.
+
+> **Caveat, verified 2026-08-21:** recon-ng's modules are largely 2020-era and several
+> upstream sources have rotted. `hackertarget` returns results; `certificate_transparency`
+> depends on crt.sh, which frequently read-timeouts (the wrapper raises TIMEOUT to 30);
+> `threatcrowd` may be dead entirely. Treat empty output as "source is gone", not "target
+> has no data" — confirm against Subagent 1C before concluding anything.
+
 **Subagent 1C — Shodan intelligence:**
 > "Search Shodan for '{target domain}' and org:{target org if known}. Collect: all IP addresses, open ports, service banners, CVEs, SSL cert data, and any Shodan tags (honeypot, cdn, etc.). Return structured JSON grouping by IP."
 

@@ -15,7 +15,7 @@ Deep reference: [[AND-XOR-5n4ck3y]]; gear: [[AND-XOR-Hardware-Gear]] (in the pi_
 ## Recognize → recipe
 
 **Stacked classical crypto** (the #1 pattern — never just one layer)
-- Suspect: text that decodes partway then still looks encoded. **Local CyberChef: `http://127.0.0.1:8000`** (offline, loopback+tailnet only). Try chains: ROT13 → Base64 → Braille → Morse → XOR; or Baconian/Vigenère/Bifid/Atbash/Polybius(keyword, I=J).
+- Suspect: text that decodes partway then still looks encoded. **Local CyberChef: `http://tsoyp-pi.tail56a0b.ts.net:8000`** (offline, loopback+tailnet only; `http://127.0.0.1:8000` on the Pi itself). Try chains: ROT13 → Base64 → Braille → Morse → XOR; or Baconian/Vigenère/Bifid/Atbash/Polybius(keyword, I=J).
 - **Repeating-key XOR w/ known prefix:** key = `ciphertext[:len("flag{")] XOR "flag{"`, then repeat.
   ```python
   ct=bytes.fromhex(H); k=bytes(a^b for a,b in zip(ct,b"flag{"))
